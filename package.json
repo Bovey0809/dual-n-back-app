@@ -1,0 +1,33 @@
+{
+  "name": "dualnbackapp",
+  "version": "1.0.0",
+  "description": "A dual N-back cognitive training application",
+  "author": "Your Name",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-packager . DualNBackApp --platform=darwin --arch=arm64 --out=dist --overwrite --prune=true && xattr -cr dist/DualNBackApp-darwin-arm64/DualNBackApp.app && codesign --force --deep --sign - dist/DualNBackApp-darwin-arm64/DualNBackApp.app",
+    "dist": "electron-builder"
+  },
+  "build": {
+    "appId": "com.example.dualnbackapp",
+    "productName": "DualNBackApp",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "index.html",
+      "node_modules/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.education",
+      "target": "dmg"
+    }
+  },
+  "devDependencies": {
+    "electron": "^37.2.5",
+    "electron-builder": "^26.0.12",
+    "electron-packager": "^17.1.2"
+  }
+}

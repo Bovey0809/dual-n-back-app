@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dual N-Back Training</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            user-select: none;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 600px;
+            width: 90%;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: 300;
+            font-size: 2.5em;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        label {
+            font-weight: 500;
+        }
+
+        select, button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        select:hover, button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
+        select:focus, button:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+        }
+
+        option {
+            background: #333;
+            color: white;
+        }
+
+        .game-area {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .grid.active {
+            opacity: 1;
+        }
+
+        .square {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .square.active {
+            background: #4CAF50;
+            box-shadow: 0 0 20px rgba(76, 175, 80, 0.5);
+            border-color: #4CAF50;
+        }
+
+        .square.clicked {
+            background: #2196F3;
+            border-color: #2196F3;
+        }
+
+        .audio-indicator {
+            font-size: 3em;
+            margin-bottom: 20px;
+            opacity: 0;
+            transition: all 0.3s ease;
+            display: none; /* Hidden since we don't need visual letter display */
+        }
+
+        .audio-indicator.active {
+            opacity: 1;
+            transform: scale(1.2);
+        }
+
+        .instructions {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 18px;
+            opacity: 0.8;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        .records-section {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .records-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .records-title {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .clear-records-btn {
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid rgba(244, 67, 54, 0.4);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .clear-records-btn:hover {
+            background: rgba(244, 67, 54, 0.3);
+        }
+
+        .records-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .record-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+            border-left: 3px solid #4CAF50;
+        }
+
+        .record-date {
+            font-weight: bold;
+            color: #4CAF50;
+            margin-bottom: 5px;
+        }
+
+        .record-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 10px;
+            font-size: 0.85em;
+            opacity: 0.9;
+        }
+
+        .no-records {
+            text-align: center;
+            opacity: 0.6;
+            font-style: italic;
+            padding: 20px;
+        }
+
+        .stat-box {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        .response-buttons {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .response-btn {
+            padding: 15px 25px;
+            font-size: 16px;
+            border-radius: 25px;
+            font-weight: bold;
+            min-width: 120px;
+        }
+
+        .response-btn.visual {
+            background: linear-gradient(45deg, #FF6B6B, #FF8E8E);
+        }
+
+        .response-btn.audio {
+            background: linear-gradient(45deg, #4ECDC4, #44A08D);
+        }
+
+        .response-btn:active {
+            transform: scale(0.95);
+        }
+
+        .disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+
+        .timer-display {
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #45a049);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .feedback {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2em;
+            font-weight: bold;
+            padding: 20px 40px;
+            border-radius: 15px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+            display: none; /* Hidden since we're using audio feedback */
+        }
+
+        .feedback.correct {
+            background: rgba(76, 175, 80, 0.9);
+            color: white;
+            border: 2px solid #4CAF50;
+        }
+
+        .feedback.incorrect {
+            background: rgba(244, 67, 54, 0.9);
+            color: white;
+            border: 2px solid #f44336;
+        }
+
+        .feedback.show {
+            opacity: 1;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .pulse {
+            animation: pulse 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Dual N-Back Training</h1>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="nLevel">N-Level:</label>
+                <select id="nLevel">
+                    <option value="1">1-Back</option>
+                    <option value="2" selected>2-Back</option>
+                    <option value="3">3-Back</option>
+                    <option value="4">4-Back</option>
+                    <option value="5">5-Back</option>
+                    <option value="6">6-Back</option>
+                    <option value="7">7-Back</option>
+                    <option value="8">8-Back</option>
+                    <option value="9">9-Back</option>
+                    <option value="10">10-Back</option>
+                    <option value="11">11-Back</option>
+                    <option value="12">12-Back</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label for="speed">Speed:</label>
+                <select id="speed">
+                    <option value="3000">Slow (3s)</option>
+                    <option value="2500" selected>Normal (2.5s)</option>
+                    <option value="2000">Fast (2s)</option>
+                    <option value="1500">Very Fast (1.5s)</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="sessionTime">Session:</label>
+                <select id="sessionTime">
+                    <option value="5">5 minutes</option>
+                    <option value="10">10 minutes</option>
+                    <option value="15">15 minutes</option>
+                    <option value="20" selected>20 minutes</option>
+                    <option value="25">25 minutes</option>
+                    <option value="30">30 minutes</option>
+                </select>
+            </div>
+            
+            <button id="testAudioBtn">Test Audio</button>
+            <button id="startBtn">Start Game</button>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+
+        <div class="timer-display" id="timerDisplay">Ready to start</div>
+
+        <div class="game-area">
+            <div class="instructions" id="instructions">
+                Press Start to begin training. Match visual positions and audio letters from N steps back.
+            </div>
+            
+            <div class="audio-indicator" id="audioIndicator">♪</div>
+            
+            <div class="grid" id="grid">
+                <div class="square" data-pos="0"></div>
+                <div class="square" data-pos="1"></div>
+                <div class="square" data-pos="2"></div>
+                <div class="square" data-pos="3"></div>
+                <div class="square" data-pos="4"></div>
+                <div class="square" data-pos="5"></div>
+                <div class="square" data-pos="6"></div>
+                <div class="square" data-pos="7"></div>
+                <div class="square" data-pos="8"></div>
+            </div>
+
+            <div class="response-buttons">
+                <button class="response-btn visual" id="visualBtn">Position Match (A)</button>
+                <button class="response-btn audio" id="audioBtn">Audio Match (L)</button>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-box">
+                <div class="stat-value" id="round">0</div>
+                <div class="stat-label">Rounds Completed</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="visualScore">0%</div>
+                <div class="stat-label">Position Accuracy</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="audioScore">0%</div>
+                <div class="stat-label">Audio Accuracy</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="totalScore">0%</div>
+                <div class="stat-label">Total Accuracy</div>
+            </div>
+        </div>
+
+        <div class="records-section">
+            <div class="records-header">
+                <div class="records-title">Training Records</div>
+                <button class="clear-records-btn" id="clearRecordsBtn">Clear All</button>
+            </div>
+            <div class="records-list" id="recordsList">
+                <div class="no-records">No training sessions recorded yet. Complete a session to see your progress!</div>
+            </div>
+        </div>
+
+        <!-- Feedback overlay -->
+        <div class="feedback" id="feedback"></div>
+    </div>
+
+    <script>
+        class DualNBack {
+            constructor() {
+                this.nLevel = 2;
+                this.speed = 2500;
+                this.sessionTime = 20; // minutes
+                this.isRunning = false;
+                this.round = 0;
+                
+                // Timer properties
+                this.sessionStartTime = null;
+                this.sessionDuration = 0; // in milliseconds
+                this.timerInterval = null;
+                
+                this.sequence = [];
+                this.visualResponses = [];
+                this.audioResponses = [];
+                
+                this.audioLetters = ['C', 'H', 'K', 'L', 'Q', 'R', 'S', 'T'];
+                
+                // Stats
+                this.visualCorrect = 0;
+                this.audioCorrect = 0;
+                this.visualTotal = 0;
+                this.audioTotal = 0;
+                
+                // Records system
+                this.trainingRecords = this.loadRecords();
+                
+                this.initializeElements();
+                this.setupEventListeners();
+                this.createAudioContext();
+                this.displayRecords();
+            }
+
+            initializeElements() {
+                this.elements = {
+                    nLevel: document.getElementById('nLevel'),
+                    speed: document.getElementById('speed'),
+                    sessionTime: document.getElementById('sessionTime'),
+                    startBtn: document.getElementById('startBtn'),
+                    testAudioBtn: document.getElementById('testAudioBtn'),
+                    clearRecordsBtn: document.getElementById('clearRecordsBtn'),
+                    grid: document.getElementById('grid'),
+                    squares: document.querySelectorAll('.square'),
+                    audioIndicator: document.getElementById('audioIndicator'),
+                    instructions: document.getElementById('instructions'),
+                    visualBtn: document.getElementById('visualBtn'),
+                    audioBtn: document.getElementById('audioBtn'),
+                    progressFill: document.getElementById('progressFill'),
+                    timerDisplay: document.getElementById('timerDisplay'),
+                    feedback: document.getElementById('feedback'),
+                    recordsList: document.getElementById('recordsList'),
+                    
+                    // Stats
+                    round: document.getElementById('round'),
+                    visualScore: document.getElementById('visualScore'),
+                    audioScore: document.getElementById('audioScore'),
+                    totalScore: document.getElementById('totalScore')
+                };
+            }
+
+            setupEventListeners() {
+                this.elements.startBtn.addEventListener('click', () => this.toggleGame());
+                this.elements.testAudioBtn.addEventListener('click', () => this.testAudio());
+                this.elements.clearRecordsBtn.addEventListener('click', () => this.clearRecords());
+                this.elements.visualBtn.addEventListener('click', () => this.recordResponse('visual'));
+                this.elements.audioBtn.addEventListener('click', () => this.recordResponse('audio'));
+                
+                // Keyboard shortcuts
+                document.addEventListener('keydown', (e) => {
+                    if (e.key.toLowerCase() === 'a') this.recordResponse('visual');
+                    if (e.key.toLowerCase() === 'l') this.recordResponse('audio');
+                    if (e.key === ' ') {
+                        e.preventDefault();
+                        this.toggleGame();
+                    }
+                });
+
+                this.elements.nLevel.addEventListener('change', (e) => {
+                    this.nLevel = parseInt(e.target.value);
+                });
+
+                this.elements.speed.addEventListener('change', (e) => {
+                    this.speed = parseInt(e.target.value);
+                });
+
+                this.elements.sessionTime.addEventListener('change', (e) => {
+                    this.sessionTime = parseInt(e.target.value);
+                });
+            }
+
+            testAudio() {
+                // Initialize audio context if needed
+                if (!this.audioContext) {
+                    try {
+                        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                        console.log('Audio context created for test');
+                    } catch (error) {
+                        console.error('Failed to create audio context for test:', error);
+                        alert('Audio not supported in this browser');
+                        return;
+                    }
+                }
+
+                // Resume audio context
+                if (this.audioContext.state === 'suspended') {
+                    this.audioContext.resume().then(() => {
+                        console.log('Audio context resumed for test');
+                        this.playTestSounds();
+                    }).catch(error => {
+                        console.error('Failed to resume audio context:', error);
+                        alert('Audio context could not be resumed');
+                    });
+                } else {
+                    this.playTestSounds();
+                }
+            }
+
+            playTestSounds() {
+                console.log('Playing test sounds...');
+                
+                // Play correct sound
+                setTimeout(() => {
+                    console.log('Testing correct sound...');
+                    this.playFeedbackSound(true);
+                }, 100);
+                
+                // Play incorrect sound
+                setTimeout(() => {
+                    console.log('Testing incorrect sound...');
+                    this.playFeedbackSound(false);
+                }, 800);
+                
+                // Test letter sound
+                setTimeout(() => {
+                    console.log('Testing letter sound...');
+                    this.playTone('C');
+                }, 1500);
+            }
+
+            createAudioContext() {
+                // Don't create audio context immediately - wait for user interaction
+                this.audioContext = null;
+                this.useSpeech = false;
+                
+                // More distinct frequency mapping for better differentiation
+                this.letterFrequencies = {
+                    'C': 200, 'H': 280, 'K': 360, 'L': 440,
+                    'Q': 520, 'R': 600, 'S': 680, 'T': 760
+                };
+                
+                console.log('Audio context initialization deferred until user interaction');
+            }
+
+            setupVoice() {
+                const voices = speechSynthesis.getVoices();
+                // Prefer English voices, prioritize system voices
+                this.voice = voices.find(voice => 
+                    voice.lang.startsWith('en') && voice.localService
+                ) || voices.find(voice => 
+                    voice.lang.startsWith('en')
+                ) || voices[0];
+            }
+
+            playTone(letter) {
+                if (this.useSpeech && 'speechSynthesis' in window) {
+                    // Use speech synthesis for clear letter pronunciation
+                    const utterance = new SpeechSynthesisUtterance(letter.toLowerCase());
+                    if (this.voice) {
+                        utterance.voice = this.voice;
+                    }
+                    utterance.rate = 1.2;
+                    utterance.pitch = 1.0;
+                    utterance.volume = 0.8;
+                    
+                    // Cancel any ongoing speech and speak the letter
+                    speechSynthesis.cancel();
+                    speechSynthesis.speak(utterance);
+                } else {
+                    // Fallback to improved Web Audio API tones
+                    if (!this.audioContext) return;
+                    
+                    try {
+                        const frequency = this.letterFrequencies[letter];
+                        const oscillator = this.audioContext.createOscillator();
+                        const gainNode = this.audioContext.createGain();
+                        
+                        oscillator.connect(gainNode);
+                        gainNode.connect(this.audioContext.destination);
+                        
+                        // Use sawtooth wave for more distinctive sound
+                        oscillator.type = 'sawtooth';
+                        oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                        
+                        // Envelope for more natural sound
+                        gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+                        gainNode.gain.linearRampToValueAtTime(0.3, this.audioContext.currentTime + 0.05);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.6);
+                        
+                        oscillator.start(this.audioContext.currentTime);
+                        oscillator.stop(this.audioContext.currentTime + 0.6);
+                    } catch (error) {
+                        console.error('Error playing tone:', error);
+                    }
+                }
+            }
+
+            playFeedbackSound(isCorrect) {
+                console.log(`Playing feedback sound: ${isCorrect ? 'correct' : 'incorrect'}`);
+                
+                if (!this.audioContext) {
+                    console.error('No audio context available');
+                    // Fallback to a simple console beep or alert
+                    if (isCorrect) {
+                        console.log('🔊 CORRECT!');
+                    } else {
+                        console.log('🔊 INCORRECT!');
+                    }
+                    return;
+                }
+                
+                try {
+                    // Resume audio context immediately if needed
+                    if (this.audioContext.state === 'suspended') {
+                        this.audioContext.resume();
+                    }
+                    
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(this.audioContext.destination);
+                    
+                    if (isCorrect) {
+                        // High, pleasant chime for correct responses
+                        oscillator.frequency.setValueAtTime(800, this.audioContext.currentTime);
+                        oscillator.frequency.exponentialRampToValueAtTime(1000, this.audioContext.currentTime + 0.1);
+                        oscillator.type = 'sine';
+                    } else {
+                        // Low, brief buzz for incorrect responses
+                        oscillator.frequency.setValueAtTime(200, this.audioContext.currentTime);
+                        oscillator.type = 'square';
+                    }
+                    
+                    // Quick envelope for immediate sound
+                    gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+                    gainNode.gain.linearRampToValueAtTime(0.5, this.audioContext.currentTime + 0.005); // Higher volume
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + (isCorrect ? 0.15 : 0.08));
+                    
+                    oscillator.start(this.audioContext.currentTime);
+                    oscillator.stop(this.audioContext.currentTime + (isCorrect ? 0.15 : 0.08));
+                    
+                    console.log('Feedback sound played successfully');
+                } catch (error) {
+                    console.error('Error playing feedback sound:', error);
+                }
+            }
+
+            updateStatsRealTime() {
+                const accuracy = this.calculateAccuracy();
+                
+                this.elements.visualScore.textContent = `${accuracy.visual}%`;
+                this.elements.audioScore.textContent = `${accuracy.audio}%`;
+                this.elements.totalScore.textContent = `${accuracy.total}%`;
+            }
+
+            playNotReadySound() {
+                if (!this.audioContext) return;
+                
+                // Resume audio context immediately if needed
+                if (this.audioContext.state === 'suspended') {
+                    this.audioContext.resume();
+                }
+                
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+                
+                // Soft, low tone for "not ready"
+                oscillator.frequency.setValueAtTime(300, this.audioContext.currentTime);
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.15, this.audioContext.currentTime + 0.005);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.12);
+                
+                oscillator.start(this.audioContext.currentTime);
+                oscillator.stop(this.audioContext.currentTime + 0.12);
+            }
+
+            playTooEarlySound() {
+                if (!this.audioContext) return;
+                
+                // Resume audio context immediately if needed
+                if (this.audioContext.state === 'suspended') {
+                    this.audioContext.resume();
+                }
+                
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+                
+                // Double beep for "too early" - need to wait for N rounds
+                oscillator.frequency.setValueAtTime(400, this.audioContext.currentTime);
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.2, this.audioContext.currentTime + 0.005);
+                gainNode.gain.linearRampToValueAtTime(0, this.audioContext.currentTime + 0.06);
+                gainNode.gain.linearRampToValueAtTime(0.2, this.audioContext.currentTime + 0.08);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.15);
+                
+                oscillator.start(this.audioContext.currentTime);
+                oscillator.stop(this.audioContext.currentTime + 0.15);
+            }
+
+            playErrorSound() {
+                if (!this.audioContext) return;
+                
+                // Resume audio context immediately if needed
+                if (this.audioContext.state === 'suspended') {
+                    this.audioContext.resume();
+                }
+                
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+                
+                // Brief error tone
+                oscillator.frequency.setValueAtTime(150, this.audioContext.currentTime);
+                oscillator.type = 'sawtooth';
+                
+                gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.2, this.audioContext.currentTime + 0.005);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.08);
+                
+                oscillator.start(this.audioContext.currentTime);
+                oscillator.stop(this.audioContext.currentTime + 0.08);
+            }
+
+            toggleGame() {
+                if (this.isRunning) {
+                    this.stopGame();
+                } else {
+                    this.startGame();
+                }
+            }
+
+            startGame() {
+                this.isRunning = true;
+                this.round = 0;
+                this.sequence = [];
+                this.visualResponses = [];
+                this.audioResponses = [];
+                
+                this.visualCorrect = 0;
+                this.audioCorrect = 0;
+                this.visualTotal = 0;
+                this.audioTotal = 0;
+                
+                // Initialize audio context if needed (user interaction required)
+                if (!this.audioContext) {
+                    try {
+                        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                        console.log('Audio context initialized on game start');
+                    } catch (error) {
+                        console.error('Failed to initialize audio context:', error);
+                        this.audioContext = null;
+                    }
+                }
+                
+                // Resume audio context
+                if (this.audioContext && this.audioContext.state === 'suspended') {
+                    this.audioContext.resume().then(() => {
+                        console.log('Audio context resumed');
+                    }).catch(error => {
+                        console.error('Failed to resume audio context:', error);
+                        this.audioContext = null;
+                    });
+                }
+                
+                // Set up timer
+                this.sessionDuration = this.sessionTime * 60 * 1000; // convert to milliseconds
+                this.sessionStartTime = Date.now();
+                
+                this.elements.startBtn.textContent = 'Stop Game';
+                this.elements.instructions.textContent = `${this.nLevel}-Back Training in Progress...`;
+                this.elements.grid.classList.add('active');
+                
+                this.enableResponseButtons();
+                this.startTimer();
+                this.nextRound();
+            }
+
+            startTimer() {
+                this.updateTimer();
+                this.timerInterval = setInterval(() => {
+                    this.updateTimer();
+                }, 1000);
+            }
+
+            updateTimer() {
+                if (!this.sessionStartTime) return;
+                
+                const elapsed = Date.now() - this.sessionStartTime;
+                const remaining = Math.max(0, this.sessionDuration - elapsed);
+                
+                if (remaining === 0) {
+                    this.endSession();
+                    return;
+                }
+                
+                const minutes = Math.floor(remaining / 60000);
+                const seconds = Math.floor((remaining % 60000) / 1000);
+                
+                this.elements.timerDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')} remaining`;
+                
+                // Update progress bar based on time
+                const progress = ((this.sessionDuration - remaining) / this.sessionDuration) * 100;
+                this.elements.progressFill.style.width = `${progress}%`;
+            }
+
+            endSession() {
+                this.isRunning = false;
+                clearInterval(this.timerInterval);
+                clearTimeout(this.currentTimeout);
+                
+                this.elements.startBtn.textContent = 'Start Game';
+                this.elements.timerDisplay.textContent = 'Session Complete!';
+                
+                const accuracy = this.calculateAccuracy();
+                this.elements.instructions.textContent = `Training Session Complete! ${this.round} rounds completed. Total Score: ${accuracy.total}%`;
+                
+                this.elements.grid.classList.remove('active');
+                this.disableResponseButtons();
+                this.updateStats();
+                
+                // Save training record
+                this.saveTrainingRecord(accuracy);
+                
+                // Reset timer display after a few seconds
+                setTimeout(() => {
+                    this.elements.timerDisplay.textContent = 'Ready to start';
+                    this.elements.progressFill.style.width = '0%';
+                }, 3000);
+            }
+
+            // Records Management
+            loadRecords() {
+                try {
+                    const stored = localStorage.getItem('dualNBackRecords');
+                    const records = stored ? JSON.parse(stored) : [];
+                    console.log('Loaded records:', records.length); // Debug log
+                    return records;
+                } catch (error) {
+                    console.error('Error loading records:', error);
+                    return [];
+                }
+            }
+
+            saveRecords() {
+                try {
+                    localStorage.setItem('dualNBackRecords', JSON.stringify(this.trainingRecords));
+                    console.log('Records saved to localStorage'); // Debug log
+                } catch (error) {
+                    console.error('Error saving records:', error);
+                }
+            }
+
+            saveTrainingRecord(accuracy) {
+                const actualDuration = this.sessionStartTime ? 
+                    Math.round((Date.now() - this.sessionStartTime) / 1000 / 60) : 0; // minutes
+                
+                const record = {
+                    date: new Date().toLocaleString(),
+                    nLevel: this.nLevel,
+                    plannedTime: this.sessionTime,
+                    actualTime: actualDuration,
+                    rounds: this.round,
+                    positionAccuracy: accuracy.visual,
+                    audioAccuracy: accuracy.audio,
+                    totalAccuracy: accuracy.total,
+                    speed: this.speed
+                };
+
+                console.log('Saving training record:', record); // Debug log
+
+                this.trainingRecords.unshift(record); // Add to beginning
+                
+                // Keep only last 50 records
+                if (this.trainingRecords.length > 50) {
+                    this.trainingRecords = this.trainingRecords.slice(0, 50);
+                }
+
+                this.saveRecords();
+                this.displayRecords();
+                
+                console.log('Records saved. Total records:', this.trainingRecords.length); // Debug log
+            }
+
+            displayRecords() {
+                const recordsList = this.elements.recordsList;
+                
+                if (this.trainingRecords.length === 0) {
+                    recordsList.innerHTML = '<div class="no-records">No training sessions recorded yet. Complete a session to see your progress!</div>';
+                    return;
+                }
+
+                recordsList.innerHTML = this.trainingRecords.map(record => `
+                    <div class="record-item">
+                        <div class="record-date">${record.date}</div>
+                        <div class="record-details">
+                            <div><strong>${record.nLevel}</strong>-Back</div>
+                            <div>${record.actualTime || record.sessionTime || record.plannedTime}min</div>
+                            <div>${record.rounds} rounds</div>
+                            <div>Pos: ${record.positionAccuracy}%</div>
+                            <div>Audio: ${record.audioAccuracy}%</div>
+                            <div><strong>Total: ${record.totalAccuracy}%</strong></div>
+                        </div>
+                    </div>
+                `).join('');
+                
+                console.log('Records displayed:', this.trainingRecords.length); // Debug log
+            }
+
+            clearRecords() {
+                if (confirm('Are you sure you want to clear all training records? This cannot be undone.')) {
+                    this.trainingRecords = [];
+                    this.saveRecords();
+                    this.displayRecords();
+                }
+            }
+
+            stopGame() {
+                if (!this.isRunning) return;
+                
+                this.isRunning = false;
+                clearTimeout(this.currentTimeout);
+                clearInterval(this.timerInterval);
+                
+                // Save record if we've completed at least a few rounds
+                if (this.round >= this.nLevel) {
+                    const accuracy = this.calculateAccuracy();
+                    this.saveTrainingRecord(accuracy);
+                }
+                
+                this.elements.startBtn.textContent = 'Start Game';
+                this.elements.instructions.textContent = 'Game stopped. Press Start to begin training.';
+                this.elements.timerDisplay.textContent = 'Ready to start';
+                this.elements.grid.classList.remove('active');
+                this.elements.progressFill.style.width = '0%';
+                this.clearActiveSquares();
+                
+                this.disableResponseButtons();
+                this.updateStats();
+            }
+
+            nextRound() {
+                if (!this.isRunning) {
+                    return;
+                }
+
+                this.round++;
+                
+                // Generate new stimuli
+                const visualPos = Math.floor(Math.random() * 9);
+                const audioLetter = this.audioLetters[Math.floor(Math.random() * this.audioLetters.length)];
+                
+                this.sequence.push({ visual: visualPos, audio: audioLetter });
+                
+                // Clear previous responses for this round
+                this.visualResponses[this.round - 1] = false;
+                this.audioResponses[this.round - 1] = false;
+                
+                // Show stimuli
+                this.showStimuli(visualPos, audioLetter);
+                
+                // Schedule next round
+                this.currentTimeout = setTimeout(() => {
+                    this.nextRound();
+                }, this.speed);
+            }
+
+            showStimuli(visualPos, audioLetter) {
+                // Clear previous
+                this.clearActiveSquares();
+                
+                // Show visual
+                this.elements.squares[visualPos].classList.add('active');
+                
+                // Resume audio context if needed (for user interaction requirement)
+                if (this.audioContext && this.audioContext.state === 'suspended') {
+                    this.audioContext.resume();
+                }
+                
+                // Play the letter sound (audio only, no visual indicator)
+                this.playTone(audioLetter);
+                
+                // Hide visual stimuli after short display
+                setTimeout(() => {
+                    this.clearActiveSquares();
+                }, 500);
+                
+                this.elements.round.textContent = this.round;
+            }
+
+            clearActiveSquares() {
+                this.elements.squares.forEach(square => {
+                    square.classList.remove('active', 'clicked');
+                });
+            }
+
+            recordResponse(type) {
+                if (!this.isRunning) {
+                    // Play a subtle "not ready" sound
+                    this.playNotReadySound();
+                    return;
+                }
+                
+                if (this.round < this.nLevel) {
+                    // Play a "too early" sound - need to wait for N rounds
+                    this.playTooEarlySound();
+                    return;
+                }
+                
+                const currentIndex = this.round - 1;
+                const targetIndex = currentIndex - this.nLevel;
+                
+                // Make sure we have valid indices
+                if (currentIndex < 0 || targetIndex < 0 || 
+                    currentIndex >= this.sequence.length || 
+                    targetIndex >= this.sequence.length) {
+                    // Play error sound for invalid state
+                    this.playErrorSound();
+                    return;
+                }
+                
+                // Check if this is a correct match RIGHT NOW
+                let isCorrect = false;
+                if (type === 'visual') {
+                    const visualMatch = this.sequence[currentIndex].visual === this.sequence[targetIndex].visual;
+                    isCorrect = visualMatch;
+                    this.visualResponses[currentIndex] = true;
+                    this.elements.visualBtn.classList.add('pulse');
+                    setTimeout(() => this.elements.visualBtn.classList.remove('pulse'), 500);
+                } else {
+                    const audioMatch = this.sequence[currentIndex].audio === this.sequence[targetIndex].audio;
+                    isCorrect = audioMatch;
+                    this.audioResponses[currentIndex] = true;
+                    this.elements.audioBtn.classList.add('pulse');
+                    setTimeout(() => this.elements.audioBtn.classList.remove('pulse'), 500);
+                }
+                
+                // Give IMMEDIATE feedback based on current comparison
+                this.showFeedback(isCorrect, type);
+            }
+
+            showFeedback(isCorrect, type) {
+                // Immediate audio feedback - plays instantly when button is pressed
+                this.playFeedbackSound(isCorrect);
+                
+                // Update accuracy stats in real-time
+                this.updateStatsRealTime();
+            }
+
+            calculateAccuracy() {
+                let visualCorrect = 0, audioCorrect = 0;
+                let visualTotal = 0, audioTotal = 0;
+                
+                for (let i = this.nLevel; i < this.sequence.length; i++) {
+                    const targetIndex = i - this.nLevel;
+                    
+                    // Visual matching
+                    const visualMatch = this.sequence[i].visual === this.sequence[targetIndex].visual;
+                    const visualResponse = this.visualResponses[i] || false;
+                    
+                    if (visualMatch === visualResponse) visualCorrect++;
+                    visualTotal++;
+                    
+                    // Audio matching
+                    const audioMatch = this.sequence[i].audio === this.sequence[targetIndex].audio;
+                    const audioResponse = this.audioResponses[i] || false;
+                    
+                    if (audioMatch === audioResponse) audioCorrect++;
+                    audioTotal++;
+                }
+                
+                return {
+                    visual: visualTotal > 0 ? Math.round((visualCorrect / visualTotal) * 100) : 0,
+                    audio: audioTotal > 0 ? Math.round((audioCorrect / audioTotal) * 100) : 0,
+                    total: (visualTotal + audioTotal) > 0 ? Math.round(((visualCorrect + audioCorrect) / (visualTotal + audioTotal)) * 100) : 0
+                };
+            }
+
+            updateStats() {
+                const accuracy = this.calculateAccuracy();
+                
+                this.elements.visualScore.textContent = `${accuracy.visual}%`;
+                this.elements.audioScore.textContent = `${accuracy.audio}%`;
+                this.elements.totalScore.textContent = `${accuracy.total}%`;
+            }
+
+            updateProgress() {
+                const progress = (this.round / this.maxRounds) * 100;
+                this.elements.progressFill.style.width = `${progress}%`;
+            }
+
+            enableResponseButtons() {
+                this.elements.visualBtn.classList.remove('disabled');
+                this.elements.audioBtn.classList.remove('disabled');
+            }
+
+            disableResponseButtons() {
+                this.elements.visualBtn.classList.add('disabled');
+                this.elements.audioBtn.classList.add('disabled');
+            }
+
+            endGame() {
+                this.isRunning = false;
+                this.elements.startBtn.textContent = 'Start Game';
+                
+                const accuracy = this.calculateAccuracy();
+                this.elements.instructions.textContent = `Training Complete! Total Score: ${accuracy.total}%`;
+                
+                this.elements.grid.classList.remove('active');
+                this.disableResponseButtons();
+                this.updateStats();
+            }
+        }
+
+        // Initialize the game when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new DualNBack();
+        });
+    </script>
+</body>
+</html>
