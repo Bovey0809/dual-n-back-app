@@ -338,6 +338,33 @@
             opacity: 1;
         }
 
+        .level-change-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            z-index: 1000;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.5s ease;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .level-change-notification.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .level-change-notification.level-down {
+            background: linear-gradient(45deg, #FF9800, #F57C00);
+        }
+
         @keyframes pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.05); }
@@ -391,6 +418,14 @@
                     <option value="20" selected>20 minutes</option>
                     <option value="25">25 minutes</option>
                     <option value="30">30 minutes</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="autoLevel">Auto Level:</label>
+                <select id="autoLevel">
+                    <option value="off">Off</option>
+                    <option value="on" selected>On</option>
                 </select>
             </div>
             
@@ -460,6 +495,9 @@
 
         <!-- Feedback overlay -->
         <div class="feedback" id="feedback"></div>
+        
+        <!-- Level change notification -->
+        <div class="level-change-notification" id="levelChangeNotification"></div>
     </div>
 
     <script>
@@ -468,8 +506,15 @@
                 this.nLevel = 2;
                 this.speed = 2500;
                 this.sessionTime = 20; // minutes
+                this.autoLevel = true; // Auto level up enabled by default
                 this.isRunning = false;
                 this.round = 0;
+                
+                // Auto level up settings
+                this.levelUpThreshold = 80; // % accuracy needed to level up
+                this.levelDownThreshold = 60; // % accuracy needed to level down
+                this.minTrialsForLevelChange = 15; // minimum trials before considering level change
+                this.recentTrials = []; // Track recent performance for auto level decisions
                 
                 // Timer properties
                 this.sessionStartTime = null;
@@ -502,6 +547,7 @@
                     nLevel: document.getElementById('nLevel'),
                     speed: document.getElementById('speed'),
                     sessionTime: document.getElementById('sessionTime'),
+                    autoLevel: document.getElementById('autoLevel'),
                     startBtn: document.getElementById('startBtn'),
                     testAudioBtn: document.getElementById('testAudioBtn'),
                     clearRecordsBtn: document.getElementById('clearRecordsBtn'),
@@ -515,6 +561,7 @@
                     timerDisplay: document.getElementById('timerDisplay'),
                     feedback: document.getElementById('feedback'),
                     recordsList: document.getElementById('recordsList'),
+                    levelChangeNotification: document.getElementById('levelChangeNotification'),
                     
                     // Stats
                     round: document.getElementById('round'),
@@ -551,6 +598,11 @@
 
                 this.elements.sessionTime.addEventListener('change', (e) => {
                     this.sessionTime = parseInt(e.target.value);
+                });
+
+                this.elements.autoLevel.addEventListener('change', (e) => {
+                    this.autoLevel = e.target.value === 'on';
+                    console.log('Auto level up:', this.autoLevel ? 'enabled' : 'disabled');
                 });
             }
 
@@ -829,6 +881,13 @@
                 this.visualTotal = 0;
                 this.audioTotal = 0;
                 
+                // Reset auto level tracking
+                this.recentTrials = [];
+                
+                // Get current settings
+                this.nLevel = parseInt(this.elements.nLevel.value);
+                this.autoLevel = this.elements.autoLevel.value === 'on';
+                
                 // Initialize audio context if needed (user interaction required)
                 if (!this.audioContext) {
                     try {
@@ -951,7 +1010,8 @@
                     positionAccuracy: accuracy.visual,
                     audioAccuracy: accuracy.audio,
                     totalAccuracy: accuracy.total,
-                    speed: this.speed
+                    speed: this.speed,
+                    autoLevel: this.autoLevel
                 };
 
                 console.log('Saving training record:', record); // Debug log
@@ -987,6 +1047,7 @@
                             <div>Pos: ${record.positionAccuracy}%</div>
                             <div>Audio: ${record.audioAccuracy}%</div>
                             <div><strong>Total: ${record.totalAccuracy}%</strong></div>
+                            ${record.autoLevel ? '<div style="color: #4CAF50;">Auto</div>' : '<div style="color: #FFA726;">Manual</div>'}
                         </div>
                     </div>
                 `).join('');
@@ -1124,6 +1185,11 @@
                 
                 // Give IMMEDIATE feedback based on current comparison
                 this.showFeedback(isCorrect, type);
+                
+                // Track for auto level up after enough rounds
+                if (this.autoLevel && this.round >= this.nLevel + this.minTrialsForLevelChange) {
+                    this.checkAutoLevelUp();
+                }
             }
 
             showFeedback(isCorrect, type) {
@@ -1132,6 +1198,113 @@
                 
                 // Update accuracy stats in real-time
                 this.updateStatsRealTime();
+            }
+
+            checkAutoLevelUp() {
+                if (!this.autoLevel) return;
+
+                // Calculate current overall accuracy using the existing method
+                const accuracy = this.calculateAccuracy();
+                const totalAccuracy = accuracy.total;
+
+                console.log(`Auto level check: ${totalAccuracy}% accuracy at round ${this.round}`);
+
+                // Level up if performance is good and not at max level
+                if (totalAccuracy >= this.levelUpThreshold && this.nLevel < 12) {
+                    this.levelUp();
+                    return;
+                }
+                // Level down if performance is poor and not at min level  
+                if (totalAccuracy < this.levelDownThreshold && this.nLevel > 1) {
+                    this.levelDown();
+                    return;
+                }
+            }
+
+            trackTrialForAutoLevel(isCorrect, type) {
+                // Add this trial to recent trials
+                this.recentTrials.push({
+                    correct: isCorrect,
+                    type: type,
+                    round: this.round
+                });
+
+                // Keep only recent trials for level decisions
+                const maxTrials = Math.max(this.minTrialsForLevelChange * 2, 30);
+                if (this.recentTrials.length > maxTrials) {
+                    this.recentTrials = this.recentTrials.slice(-maxTrials);
+                }
+
+                // Check if we should change level (only after minimum trials)
+                if (this.recentTrials.length >= this.minTrialsForLevelChange) {
+                    this.checkLevelChange();
+                }
+            }
+
+            checkLevelChange() {
+                if (!this.autoLevel) return;
+
+                // Calculate recent accuracy
+                const recentTrialsToAnalyze = this.recentTrials.slice(-this.minTrialsForLevelChange);
+                const totalTrials = recentTrialsToAnalyze.length;
+                const correctTrials = recentTrialsToAnalyze.filter(trial => trial.correct).length;
+                const accuracy = (correctTrials / totalTrials) * 100;
+
+                console.log(`Auto level check: ${accuracy.toFixed(1)}% accuracy over ${totalTrials} trials`);
+
+                // Level up if performance is good and not at max level
+                if (accuracy >= this.levelUpThreshold && this.nLevel < 12) {
+                    this.levelUp();
+                }
+                // Level down if performance is poor and not at min level  
+                else if (accuracy < this.levelDownThreshold && this.nLevel > 1) {
+                    this.levelDown();
+                }
+            }
+
+            levelUp() {
+                const oldLevel = this.nLevel;
+                this.nLevel++;
+                this.elements.nLevel.value = this.nLevel;
+                
+                // Clear recent trials to avoid immediate level changes
+                this.recentTrials = [];
+                
+                // Show notification
+                this.showLevelChangeNotification(`Level Up! Now playing ${this.nLevel}-Back`, false);
+                
+                console.log(`Auto level up: ${oldLevel}-Back → ${this.nLevel}-Back`);
+            }
+
+            levelDown() {
+                const oldLevel = this.nLevel;
+                this.nLevel--;
+                this.elements.nLevel.value = this.nLevel;
+                
+                // Clear recent trials to avoid immediate level changes
+                this.recentTrials = [];
+                
+                // Show notification
+                this.showLevelChangeNotification(`Level Down: Now playing ${this.nLevel}-Back`, true);
+                
+                console.log(`Auto level down: ${oldLevel}-Back → ${this.nLevel}-Back`);
+            }
+
+            showLevelChangeNotification(message, isLevelDown) {
+                const notification = this.elements.levelChangeNotification;
+                notification.textContent = message;
+                notification.classList.remove('level-down');
+                
+                if (isLevelDown) {
+                    notification.classList.add('level-down');
+                }
+                
+                notification.classList.add('show');
+                
+                // Hide after 3 seconds
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 3000);
             }
 
             calculateAccuracy() {
