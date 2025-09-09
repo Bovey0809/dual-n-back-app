@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -648,17 +649,20 @@
                     this.playFeedbackSound(false);
                 }, 800);
                 
-                // Test letter sound
-                setTimeout(() => {
-                    console.log('Testing letter sound...');
-                    this.playTone('C');
-                }, 1500);
+                // Test letter sounds with speech synthesis
+                const testLetters = ['C', 'H', 'K', 'L'];
+                testLetters.forEach((letter, index) => {
+                    setTimeout(() => {
+                        console.log(`Testing letter sound: ${letter}`);
+                        this.playTone(letter);
+                    }, 1500 + (index * 800));
+                });
             }
 
             createAudioContext() {
                 // Don't create audio context immediately - wait for user interaction
                 this.audioContext = null;
-                this.useSpeech = false;
+                this.useSpeech = true; // Enable speech synthesis by default
                 
                 // More distinct frequency mapping for better differentiation
                 this.letterFrequencies = {
@@ -666,59 +670,131 @@
                     'Q': 520, 'R': 600, 'S': 680, 'T': 760
                 };
                 
-                console.log('Audio context initialization deferred until user interaction');
+                // Initialize speech synthesis
+                this.setupVoice();
+                
+                console.log('Audio context initialization deferred until user interaction, speech synthesis enabled');
             }
 
             setupVoice() {
+                if (!('speechSynthesis' in window)) {
+                    console.log('Speech synthesis not supported, using fallback tones');
+                    this.useSpeech = false;
+                    return;
+                }
+
                 const voices = speechSynthesis.getVoices();
+                
+                if (voices.length === 0) {
+                    // Voices not loaded yet, set up listener
+                    speechSynthesis.onvoiceschanged = () => {
+                        const newVoices = speechSynthesis.getVoices();
+                        this.selectBestVoice(newVoices);
+                    };
+                } else {
+                    this.selectBestVoice(voices);
+                }
+            }
+
+            selectBestVoice(voices) {
                 // Prefer English voices, prioritize system voices
                 this.voice = voices.find(voice => 
                     voice.lang.startsWith('en') && voice.localService
                 ) || voices.find(voice => 
                     voice.lang.startsWith('en')
                 ) || voices[0];
+                
+                if (this.voice) {
+                    console.log(`Selected voice: ${this.voice.name} (${this.voice.lang})`);
+                } else {
+                    console.log('No suitable voice found, using fallback tones');
+                    this.useSpeech = false;
+                }
             }
 
             playTone(letter) {
+                console.log(`Playing tone for letter: ${letter}, useSpeech: ${this.useSpeech}`);
+                
                 if (this.useSpeech && 'speechSynthesis' in window) {
-                    // Use speech synthesis for clear letter pronunciation
-                    const utterance = new SpeechSynthesisUtterance(letter.toLowerCase());
-                    if (this.voice) {
-                        utterance.voice = this.voice;
-                    }
-                    utterance.rate = 1.2;
-                    utterance.pitch = 1.0;
-                    utterance.volume = 0.8;
-                    
-                    // Cancel any ongoing speech and speak the letter
-                    speechSynthesis.cancel();
-                    speechSynthesis.speak(utterance);
-                } else {
-                    // Fallback to improved Web Audio API tones
-                    if (!this.audioContext) return;
-                    
                     try {
-                        const frequency = this.letterFrequencies[letter];
-                        const oscillator = this.audioContext.createOscillator();
-                        const gainNode = this.audioContext.createGain();
+                        // Map letters to phonetic pronunciation to avoid "capital X" 
+                        const letterPhonetics = {
+                            'C': 'see',
+                            'H': 'aitch', 
+                            'K': 'kay',
+                            'L': 'ell',
+                            'Q': 'cue',
+                            'R': 'are', 
+                            'S': 'ess',
+                            'T': 'tee'
+                        };
                         
-                        oscillator.connect(gainNode);
-                        gainNode.connect(this.audioContext.destination);
+                        const textToSpeak = letterPhonetics[letter] || letter.toLowerCase();
+                        const utterance = new SpeechSynthesisUtterance(textToSpeak);
                         
-                        // Use sawtooth wave for more distinctive sound
-                        oscillator.type = 'sawtooth';
-                        oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                        if (this.voice) {
+                            utterance.voice = this.voice;
+                            console.log(`Using voice: ${this.voice.name}`);
+                        } else {
+                            console.log('No specific voice set, using default');
+                        }
                         
-                        // Envelope for more natural sound
-                        gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
-                        gainNode.gain.linearRampToValueAtTime(0.3, this.audioContext.currentTime + 0.05);
-                        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.6);
+                        utterance.rate = 1.0; // Slower for clarity
+                        utterance.pitch = 1.0;
+                        utterance.volume = 0.9; // Higher volume
                         
-                        oscillator.start(this.audioContext.currentTime);
-                        oscillator.stop(this.audioContext.currentTime + 0.6);
+                        // Add event listeners for debugging
+                        utterance.onstart = () => console.log(`Started speaking: ${letter}`);
+                        utterance.onend = () => console.log(`Finished speaking: ${letter}`);
+                        utterance.onerror = (event) => {
+                            console.error('Speech synthesis error:', event.error);
+                            // Fallback to tones on error
+                            this.playFallbackTone(letter);
+                        };
+                        
+                        // Cancel any ongoing speech and speak the letter
+                        speechSynthesis.cancel();
+                        speechSynthesis.speak(utterance);
+                        
                     } catch (error) {
-                        console.error('Error playing tone:', error);
+                        console.error('Error with speech synthesis:', error);
+                        this.playFallbackTone(letter);
                     }
+                } else {
+                    this.playFallbackTone(letter);
+                }
+            }
+
+            playFallbackTone(letter) {
+                console.log(`Playing fallback tone for letter: ${letter}`);
+                
+                // Fallback to improved Web Audio API tones
+                if (!this.audioContext) {
+                    console.log('No audio context available for fallback');
+                    return;
+                }
+                
+                try {
+                    const frequency = this.letterFrequencies[letter];
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(this.audioContext.destination);
+                    
+                    // Use sawtooth wave for more distinctive sound
+                    oscillator.type = 'sawtooth';
+                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    
+                    // Envelope for more natural sound
+                    gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+                    gainNode.gain.linearRampToValueAtTime(0.3, this.audioContext.currentTime + 0.05);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.6);
+                    
+                    oscillator.start(this.audioContext.currentTime);
+                    oscillator.stop(this.audioContext.currentTime + 0.6);
+                } catch (error) {
+                    console.error('Error playing fallback tone:', error);
                 }
             }
 
