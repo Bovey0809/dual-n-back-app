@@ -539,6 +539,7 @@
                 this.initializeElements();
                 this.setupEventListeners();
                 this.createAudioContext();
+                this.setupSpeechSynthesis();
                 this.displayRecords();
             }
 
@@ -658,7 +659,7 @@
             createAudioContext() {
                 // Don't create audio context immediately - wait for user interaction
                 this.audioContext = null;
-                this.useSpeech = false;
+                this.useSpeech = true; // Enable speech synthesis for letter pronunciation
                 
                 // More distinct frequency mapping for better differentiation
                 this.letterFrequencies = {
@@ -669,6 +670,23 @@
                 console.log('Audio context initialization deferred until user interaction');
             }
 
+            setupSpeechSynthesis() {
+                if ('speechSynthesis' in window) {
+                    // Set up voice selection
+                    this.setupVoice();
+                    
+                    // Handle the case where voices aren't loaded yet
+                    if (speechSynthesis.getVoices().length === 0) {
+                        speechSynthesis.addEventListener('voiceschanged', () => {
+                            this.setupVoice();
+                        });
+                    }
+                    console.log('Speech synthesis initialized');
+                } else {
+                    console.warn('Speech synthesis not supported, using Web Audio API fallback');
+                }
+            }
+
             setupVoice() {
                 const voices = speechSynthesis.getVoices();
                 // Prefer English voices, prioritize system voices
@@ -677,15 +695,19 @@
                 ) || voices.find(voice => 
                     voice.lang.startsWith('en')
                 ) || voices[0];
+                
+                if (this.voice) {
+                    console.log('Selected voice:', this.voice.name, this.voice.lang);
+                } else {
+                    console.warn('No suitable voice found for speech synthesis');
+                }
             }
 
             playTone(letter) {
-                if (this.useSpeech && 'speechSynthesis' in window) {
+                if (this.useSpeech && 'speechSynthesis' in window && this.voice) {
                     // Use speech synthesis for clear letter pronunciation
                     const utterance = new SpeechSynthesisUtterance(letter.toLowerCase());
-                    if (this.voice) {
-                        utterance.voice = this.voice;
-                    }
+                    utterance.voice = this.voice;
                     utterance.rate = 1.2;
                     utterance.pitch = 1.0;
                     utterance.volume = 0.8;
@@ -693,6 +715,7 @@
                     // Cancel any ongoing speech and speak the letter
                     speechSynthesis.cancel();
                     speechSynthesis.speak(utterance);
+                    console.log('Playing letter with speech synthesis:', letter);
                 } else {
                     // Fallback to improved Web Audio API tones
                     if (!this.audioContext) return;
@@ -716,6 +739,8 @@
                         
                         oscillator.start(this.audioContext.currentTime);
                         oscillator.stop(this.audioContext.currentTime + 0.6);
+                        
+                        console.log('Playing letter with Web Audio API tone:', letter, 'at frequency:', frequency, 'Hz');
                     } catch (error) {
                         console.error('Error playing tone:', error);
                     }
