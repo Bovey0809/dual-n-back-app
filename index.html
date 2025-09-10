@@ -1041,8 +1041,10 @@
                 this.disableResponseButtons();
                 this.updateStats();
                 
-                // Save training record
-                this.saveTrainingRecord(accuracy);
+                // Save final training record for current level
+                if (this.round >= this.nLevel) {
+                    this.saveCurrentLevelRecord(this.nLevel, 'Session End');
+                }
                 
                 // Reset timer display after a few seconds
                 setTimeout(() => {
@@ -1118,12 +1120,13 @@
                         <div class="record-date">${record.date}</div>
                         <div class="record-details">
                             <div><strong>${record.nLevel}</strong>-Back</div>
-                            <div>${record.actualTime || record.sessionTime || record.plannedTime}min</div>
+                            <div>${record.sessionTime || record.actualTime || record.plannedTime || 0}min</div>
                             <div>${record.rounds} rounds</div>
                             <div>Pos: ${record.positionAccuracy}%</div>
                             <div>Audio: ${record.audioAccuracy}%</div>
                             <div><strong>Total: ${record.totalAccuracy}%</strong></div>
                             ${record.autoLevel ? '<div style="color: #4CAF50;">Auto</div>' : '<div style="color: #FFA726;">Manual</div>'}
+                            ${record.reason ? `<div style="color: #81C784; font-size: 0.8em;">${record.reason}</div>` : ''}
                         </div>
                     </div>
                 `).join('');
@@ -1147,9 +1150,8 @@
                 clearInterval(this.timerInterval);
                 
                 // Save record if we've completed at least a few rounds
-                if (this.round >= this.nLevel) {
-                    const accuracy = this.calculateAccuracy();
-                    this.saveTrainingRecord(accuracy);
+                if (this.round >= this.nLevel + 3) {
+                    this.saveCurrentLevelRecord(this.nLevel, 'Session Stopped');
                 }
                 
                 this.elements.startBtn.textContent = 'Start Game';
@@ -1340,8 +1342,17 @@
 
             levelUp() {
                 const oldLevel = this.nLevel;
+                
+                // Save record for current level before changing
+                if (this.round >= this.nLevel) {
+                    this.saveCurrentLevelRecord(oldLevel, 'Level Up');
+                }
+                
                 this.nLevel++;
                 this.elements.nLevel.value = this.nLevel;
+                
+                // Reset accuracy stats for new level
+                this.resetAccuracyStats();
                 
                 // Clear recent trials to avoid immediate level changes
                 this.recentTrials = [];
@@ -1354,8 +1365,17 @@
 
             levelDown() {
                 const oldLevel = this.nLevel;
+                
+                // Save record for current level before changing
+                if (this.round >= this.nLevel) {
+                    this.saveCurrentLevelRecord(oldLevel, 'Level Down');
+                }
+                
                 this.nLevel--;
                 this.elements.nLevel.value = this.nLevel;
+                
+                // Reset accuracy stats for new level
+                this.resetAccuracyStats();
                 
                 // Clear recent trials to avoid immediate level changes
                 this.recentTrials = [];
@@ -1364,6 +1384,56 @@
                 this.showLevelChangeNotification(`Level Down: Now playing ${this.nLevel}-Back`, true);
                 
                 console.log(`Auto level down: ${oldLevel}-Back → ${this.nLevel}-Back`);
+            }
+
+            resetAccuracyStats() {
+                // Reset accuracy tracking for new level
+                this.visualCorrect = 0;
+                this.audioCorrect = 0;
+                this.visualTotal = 0;
+                this.audioTotal = 0;
+                
+                // Keep sequence and response data but reset stats calculation
+                // This allows the game to continue seamlessly while accuracy resets
+                console.log('Accuracy stats reset for new level');
+            }
+
+            saveCurrentLevelRecord(level, reason) {
+                // Only save if we have meaningful data (at least a few rounds)
+                if (this.round < level + 3) {
+                    console.log('Insufficient data for level record, skipping');
+                    return;
+                }
+                
+                const accuracy = this.calculateAccuracy();
+                const currentTime = Date.now();
+                const sessionElapsed = this.sessionStartTime ? 
+                    Math.round((currentTime - this.sessionStartTime) / 1000 / 60) : 0;
+                
+                const record = {
+                    date: new Date().toLocaleString(),
+                    nLevel: level,
+                    reason: reason, // 'Level Up', 'Level Down', or 'Session End'
+                    sessionTime: sessionElapsed,
+                    rounds: this.round - level, // Rounds completed at this level
+                    positionAccuracy: accuracy.visual,
+                    audioAccuracy: accuracy.audio,
+                    totalAccuracy: accuracy.total,
+                    speed: this.speed,
+                    autoLevel: this.autoLevel
+                };
+
+                console.log('Saving level record:', record);
+
+                this.trainingRecords.unshift(record);
+                
+                // Keep only last 50 records
+                if (this.trainingRecords.length > 50) {
+                    this.trainingRecords = this.trainingRecords.slice(0, 50);
+                }
+
+                this.saveRecords();
+                this.displayRecords();
             }
 
             showLevelChangeNotification(message, isLevelDown) {
