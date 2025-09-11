@@ -379,69 +379,77 @@
 </head>
 <body>
     <div class="container">
-        <h1>Dual N-Back Training</h1>
+        <h1 data-i18n="title">Dual N-Back Training</h1>
         
         <div class="controls">
             <div class="control-group">
-                <label for="nLevel">N-Level:</label>
+                <label for="language" data-i18n="language">Language:</label>
+                <select id="language">
+                    <option value="en" data-i18n="lang-en">English</option>
+                    <option value="zh" data-i18n="lang-zh">中文</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label for="nLevel" data-i18n="n-level">N-Level:</label>
                 <select id="nLevel">
-                    <option value="1">1-Back</option>
-                    <option value="2" selected>2-Back</option>
-                    <option value="3">3-Back</option>
-                    <option value="4">4-Back</option>
-                    <option value="5">5-Back</option>
-                    <option value="6">6-Back</option>
-                    <option value="7">7-Back</option>
-                    <option value="8">8-Back</option>
-                    <option value="9">9-Back</option>
-                    <option value="10">10-Back</option>
-                    <option value="11">11-Back</option>
-                    <option value="12">12-Back</option>
+                    <option value="1" data-i18n="1-back">1-Back</option>
+                    <option value="2" selected data-i18n="2-back">2-Back</option>
+                    <option value="3" data-i18n="3-back">3-Back</option>
+                    <option value="4" data-i18n="4-back">4-Back</option>
+                    <option value="5" data-i18n="5-back">5-Back</option>
+                    <option value="6" data-i18n="6-back">6-Back</option>
+                    <option value="7" data-i18n="7-back">7-Back</option>
+                    <option value="8" data-i18n="8-back">8-Back</option>
+                    <option value="9" data-i18n="9-back">9-Back</option>
+                    <option value="10" data-i18n="10-back">10-Back</option>
+                    <option value="11" data-i18n="11-back">11-Back</option>
+                    <option value="12" data-i18n="12-back">12-Back</option>
                 </select>
             </div>
             
             <div class="control-group">
-                <label for="speed">Speed:</label>
+                <label for="speed" data-i18n="speed">Speed:</label>
                 <select id="speed">
-                    <option value="3000">Slow (3s)</option>
-                    <option value="2500" selected>Normal (2.5s)</option>
-                    <option value="2000">Fast (2s)</option>
-                    <option value="1500">Very Fast (1.5s)</option>
+                    <option value="3000" data-i18n="slow">Slow (3s)</option>
+                    <option value="2500" selected data-i18n="normal">Normal (2.5s)</option>
+                    <option value="2000" data-i18n="fast">Fast (2s)</option>
+                    <option value="1500" data-i18n="very-fast">Very Fast (1.5s)</option>
                 </select>
             </div>
 
             <div class="control-group">
-                <label for="sessionTime">Session:</label>
+                <label for="sessionTime" data-i18n="session">Session:</label>
                 <select id="sessionTime">
-                    <option value="5">5 minutes</option>
-                    <option value="10">10 minutes</option>
-                    <option value="15">15 minutes</option>
-                    <option value="20" selected>20 minutes</option>
-                    <option value="25">25 minutes</option>
-                    <option value="30">30 minutes</option>
+                    <option value="5" data-i18n="5-minutes">5 minutes</option>
+                    <option value="10" data-i18n="10-minutes">10 minutes</option>
+                    <option value="15" data-i18n="15-minutes">15 minutes</option>
+                    <option value="20" selected data-i18n="20-minutes">20 minutes</option>
+                    <option value="25" data-i18n="25-minutes">25 minutes</option>
+                    <option value="30" data-i18n="30-minutes">30 minutes</option>
                 </select>
             </div>
 
             <div class="control-group">
-                <label for="autoLevel">Auto Level:</label>
+                <label for="autoLevel" data-i18n="auto-level">Auto Level:</label>
                 <select id="autoLevel">
-                    <option value="off">Off</option>
-                    <option value="on" selected>On</option>
+                    <option value="off" data-i18n="off">Off</option>
+                    <option value="on" selected data-i18n="on">On</option>
                 </select>
             </div>
             
-            <button id="testAudioBtn">Test Audio</button>
-            <button id="startBtn">Start Game</button>
+            <button id="testAudioBtn" data-i18n="test-audio">Test Audio</button>
+            <button id="startBtn" data-i18n="start-game">Start Game</button>
         </div>
 
         <div class="progress-bar">
             <div class="progress-fill" id="progressFill"></div>
         </div>
 
-        <div class="timer-display" id="timerDisplay">Ready to start</div>
+        <div class="timer-display" id="timerDisplay" data-i18n="ready-to-start">Ready to start</div>
 
         <div class="game-area">
-            <div class="instructions" id="instructions">
+            <div class="instructions" id="instructions" data-i18n="instructions">
                 Press Start to begin training. Match visual positions and audio letters from N steps back.
             </div>
             
@@ -460,37 +468,37 @@
             </div>
 
             <div class="response-buttons">
-                <button class="response-btn visual" id="visualBtn">Position Match (A)</button>
-                <button class="response-btn audio" id="audioBtn">Audio Match (L)</button>
+                <button class="response-btn visual" id="visualBtn" data-i18n="position-match">Position Match (A)</button>
+                <button class="response-btn audio" id="audioBtn" data-i18n="audio-match">Audio Match (L)</button>
             </div>
         </div>
 
         <div class="stats">
             <div class="stat-box">
                 <div class="stat-value" id="round">0</div>
-                <div class="stat-label">Rounds Completed</div>
+                <div class="stat-label" data-i18n="rounds-completed">Rounds Completed</div>
             </div>
             <div class="stat-box">
                 <div class="stat-value" id="visualScore">0%</div>
-                <div class="stat-label">Position Accuracy</div>
+                <div class="stat-label" data-i18n="position-accuracy">Position Accuracy</div>
             </div>
             <div class="stat-box">
                 <div class="stat-value" id="audioScore">0%</div>
-                <div class="stat-label">Audio Accuracy</div>
+                <div class="stat-label" data-i18n="audio-accuracy">Audio Accuracy</div>
             </div>
             <div class="stat-box">
                 <div class="stat-value" id="totalScore">0%</div>
-                <div class="stat-label">Total Accuracy</div>
+                <div class="stat-label" data-i18n="total-accuracy">Total Accuracy</div>
             </div>
         </div>
 
         <div class="records-section">
             <div class="records-header">
-                <div class="records-title">Training Records</div>
-                <button class="clear-records-btn" id="clearRecordsBtn">Clear All</button>
+                <div class="records-title" data-i18n="training-records">Training Records</div>
+                <button class="clear-records-btn" id="clearRecordsBtn" data-i18n="clear-all">Clear All</button>
             </div>
             <div class="records-list" id="recordsList">
-                <div class="no-records">No training sessions recorded yet. Complete a session to see your progress!</div>
+                <div class="no-records" data-i18n="no-records">No training sessions recorded yet. Complete a session to see your progress!</div>
             </div>
         </div>
 
@@ -502,8 +510,189 @@
     </div>
 
     <script>
+        // Translation system
+        const translations = {
+            en: {
+                // Page elements
+                'title': 'Dual N-Back Training',
+                'language': 'Language:',
+                'lang-en': 'English',
+                'lang-zh': '中文',
+                'n-level': 'N-Level:',
+                '1-back': '1-Back',
+                '2-back': '2-Back', 
+                '3-back': '3-Back',
+                '4-back': '4-Back',
+                '5-back': '5-Back',
+                '6-back': '6-Back',
+                '7-back': '7-Back',
+                '8-back': '8-Back',
+                '9-back': '9-Back',
+                '10-back': '10-Back',
+                '11-back': '11-Back',
+                '12-back': '12-Back',
+                'speed': 'Speed:',
+                'slow': 'Slow (3s)',
+                'normal': 'Normal (2.5s)',
+                'fast': 'Fast (2s)',
+                'very-fast': 'Very Fast (1.5s)',
+                'session': 'Session:',
+                '5-minutes': '5 minutes',
+                '10-minutes': '10 minutes',
+                '15-minutes': '15 minutes',
+                '20-minutes': '20 minutes',
+                '25-minutes': '25 minutes',
+                '30-minutes': '30 minutes',
+                'auto-level': 'Auto Level:',
+                'off': 'Off',
+                'on': 'On',
+                'test-audio': 'Test Audio',
+                'start-game': 'Start Game',
+                'stop-game': 'Stop Game',
+                'instructions': 'Press Start to begin training. Match visual positions and audio letters from N steps back.',
+                'position-match': 'Position Match (A)',
+                'audio-match': 'Audio Match (L)',
+                'rounds-completed': 'Rounds Completed',
+                'position-accuracy': 'Position Accuracy',
+                'audio-accuracy': 'Audio Accuracy',
+                'total-accuracy': 'Total Accuracy',
+                'training-records': 'Training Records',
+                'clear-all': 'Clear All',
+                'no-records': 'No training sessions recorded yet. Complete a session to see your progress!',
+                
+                // Dynamic messages
+                'ready-to-start': 'Ready to start',
+                'training-in-progress': '%s-Back Training in Progress...',
+                'session-complete': 'Session Complete!',
+                'training-complete': 'Training Complete! %s rounds completed. Total Score: %s%',
+                'game-stopped': 'Game stopped. Press Start to begin training.',
+                'minutes-remaining': '%s:%s remaining',
+                'level-up': 'Level Up! Now playing %s-Back',
+                'level-down': 'Level Down: Now playing %s-Back',
+                
+                // Records
+                'back-suffix': '-Back',
+                'min-suffix': 'min',
+                'rounds': 'rounds',
+                'pos-short': 'Pos',
+                'audio-short': 'Audio',
+                'total-short': 'Total',
+                'auto-short': 'Auto',
+                'manual-short': 'Manual'
+            },
+            zh: {
+                // Page elements
+                'title': '双重 N 连训练',
+                'language': '语言：',
+                'lang-en': 'English',
+                'lang-zh': '中文',
+                'n-level': 'N 级别：',
+                '1-back': '1连',
+                '2-back': '2连',
+                '3-back': '3连',
+                '4-back': '4连',
+                '5-back': '5连',
+                '6-back': '6连',
+                '7-back': '7连',
+                '8-back': '8连',
+                '9-back': '9连',
+                '10-back': '10连',
+                '11-back': '11连',
+                '12-back': '12连',
+                'speed': '速度：',
+                'slow': '慢 (3秒)',
+                'normal': '正常 (2.5秒)',
+                'fast': '快 (2秒)',
+                'very-fast': '很快 (1.5秒)',
+                'session': '训练时长：',
+                '5-minutes': '5分钟',
+                '10-minutes': '10分钟',
+                '15-minutes': '15分钟',
+                '20-minutes': '20分钟',
+                '25-minutes': '25分钟',
+                '30-minutes': '30分钟',
+                'auto-level': '自动调级：',
+                'off': '关闭',
+                'on': '开启',
+                'test-audio': '测试音频',
+                'start-game': '开始游戏',
+                'stop-game': '停止游戏',
+                'instructions': '按开始键开始训练。匹配 N 步前的视觉位置和音频字母。',
+                'position-match': '位置匹配 (A)',
+                'audio-match': '音频匹配 (L)',
+                'rounds-completed': '已完成轮数',
+                'position-accuracy': '位置准确率',
+                'audio-accuracy': '音频准确率',
+                'total-accuracy': '总准确率',
+                'training-records': '训练记录',
+                'clear-all': '清除全部',
+                'no-records': '尚无训练记录。完成一次训练后即可查看进展！',
+                
+                // Dynamic messages
+                'ready-to-start': '准备开始',
+                'training-in-progress': '%s连训练进行中...',
+                'session-complete': '训练完成！',
+                'training-complete': '训练完成！完成了 %s 轮训练。总分：%s%',
+                'game-stopped': '游戏已停止。按开始键开始训练。',
+                'minutes-remaining': '剩余 %s:%s',
+                'level-up': '升级！现在进行 %s连',
+                'level-down': '降级：现在进行 %s连',
+                
+                // Records
+                'back-suffix': '连',
+                'min-suffix': '分钟',
+                'rounds': '轮',
+                'pos-short': '位置',
+                'audio-short': '音频',
+                'total-short': '总计',
+                'auto-short': '自动',
+                'manual-short': '手动'
+            }
+        };
+
+        // Translation helper
+        class I18n {
+            constructor() {
+                this.currentLang = localStorage.getItem('dualnback-lang') || 'en';
+                this.updateLanguage();
+            }
+
+            t(key, ...args) {
+                let text = translations[this.currentLang][key] || translations['en'][key] || key;
+                
+                // Simple string formatting - replace %s with arguments
+                if (args.length > 0) {
+                    args.forEach((arg, index) => {
+                        text = text.replace('%s', arg);
+                    });
+                }
+                
+                return text;
+            }
+
+            setLanguage(lang) {
+                this.currentLang = lang;
+                localStorage.setItem('dualnback-lang', lang);
+                this.updateLanguage();
+            }
+
+            updateLanguage() {
+                // Update all elements with data-i18n attributes
+                document.querySelectorAll('[data-i18n]').forEach(element => {
+                    const key = element.getAttribute('data-i18n');
+                    element.textContent = this.t(key);
+                });
+                
+                // Update page title
+                document.title = this.t('title');
+            }
+        }
+
         class DualNBack {
             constructor() {
+                // Initialize translation system
+                this.i18n = new I18n();
+                
                 this.nLevel = 2;
                 this.speed = 2500;
                 this.sessionTime = 20; // minutes
@@ -545,6 +734,7 @@
 
             initializeElements() {
                 this.elements = {
+                    language: document.getElementById('language'),
                     nLevel: document.getElementById('nLevel'),
                     speed: document.getElementById('speed'),
                     sessionTime: document.getElementById('sessionTime'),
@@ -570,6 +760,9 @@
                     audioScore: document.getElementById('audioScore'),
                     totalScore: document.getElementById('totalScore')
                 };
+                
+                // Set language selector to current language
+                this.elements.language.value = this.i18n.currentLang;
             }
 
             setupEventListeners() {
@@ -578,6 +771,13 @@
                 this.elements.clearRecordsBtn.addEventListener('click', () => this.clearRecords());
                 this.elements.visualBtn.addEventListener('click', () => this.recordResponse('visual'));
                 this.elements.audioBtn.addEventListener('click', () => this.recordResponse('audio'));
+                
+                // Language change listener
+                this.elements.language.addEventListener('change', (e) => {
+                    this.i18n.setLanguage(e.target.value);
+                    this.updateTimerDisplay(); // Update timer text immediately
+                    this.displayRecords(); // Update records display
+                });
                 
                 // Keyboard shortcuts
                 document.addEventListener('keydown', (e) => {
@@ -989,8 +1189,8 @@
                 this.sessionDuration = this.sessionTime * 60 * 1000; // convert to milliseconds
                 this.sessionStartTime = Date.now();
                 
-                this.elements.startBtn.textContent = 'Stop Game';
-                this.elements.instructions.textContent = `${this.nLevel}-Back Training in Progress...`;
+                this.elements.startBtn.textContent = this.i18n.t('stop-game');
+                this.elements.instructions.textContent = this.i18n.t('training-in-progress', this.nLevel);
                 this.elements.grid.classList.add('active');
                 
                 this.enableResponseButtons();
@@ -1019,11 +1219,20 @@
                 const minutes = Math.floor(remaining / 60000);
                 const seconds = Math.floor((remaining % 60000) / 1000);
                 
-                this.elements.timerDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')} remaining`;
+                this.elements.timerDisplay.textContent = this.i18n.t('minutes-remaining', minutes, seconds.toString().padStart(2, '0'));
                 
                 // Update progress bar based on time
                 const progress = ((this.sessionDuration - remaining) / this.sessionDuration) * 100;
                 this.elements.progressFill.style.width = `${progress}%`;
+            }
+
+            updateTimerDisplay() {
+                // Helper method to update timer display when language changes
+                if (this.sessionStartTime) {
+                    this.updateTimer();
+                } else {
+                    this.elements.timerDisplay.textContent = this.i18n.t('ready-to-start');
+                }
             }
 
             endSession() {
@@ -1031,11 +1240,11 @@
                 clearInterval(this.timerInterval);
                 clearTimeout(this.currentTimeout);
                 
-                this.elements.startBtn.textContent = 'Start Game';
-                this.elements.timerDisplay.textContent = 'Session Complete!';
+                this.elements.startBtn.textContent = this.i18n.t('start-game');
+                this.elements.timerDisplay.textContent = this.i18n.t('session-complete');
                 
                 const accuracy = this.calculateAccuracy();
-                this.elements.instructions.textContent = `Training Session Complete! ${this.round} rounds completed. Total Score: ${accuracy.total}%`;
+                this.elements.instructions.textContent = this.i18n.t('training-complete', this.round, accuracy.total);
                 
                 this.elements.grid.classList.remove('active');
                 this.disableResponseButtons();
@@ -1046,7 +1255,7 @@
                 
                 // Reset timer display after a few seconds
                 setTimeout(() => {
-                    this.elements.timerDisplay.textContent = 'Ready to start';
+                    this.elements.timerDisplay.textContent = this.i18n.t('ready-to-start');
                     this.elements.progressFill.style.width = '0%';
                 }, 3000);
             }
@@ -1109,7 +1318,7 @@
                 const recordsList = this.elements.recordsList;
                 
                 if (this.trainingRecords.length === 0) {
-                    recordsList.innerHTML = '<div class="no-records">No training sessions recorded yet. Complete a session to see your progress!</div>';
+                    recordsList.innerHTML = `<div class="no-records" data-i18n="no-records">${this.i18n.t('no-records')}</div>`;
                     return;
                 }
 
@@ -1117,13 +1326,13 @@
                     <div class="record-item">
                         <div class="record-date">${record.date}</div>
                         <div class="record-details">
-                            <div><strong>${record.nLevel}</strong>-Back</div>
-                            <div>${record.actualTime || record.sessionTime || record.plannedTime}min</div>
-                            <div>${record.rounds} rounds</div>
-                            <div>Pos: ${record.positionAccuracy}%</div>
-                            <div>Audio: ${record.audioAccuracy}%</div>
-                            <div><strong>Total: ${record.totalAccuracy}%</strong></div>
-                            ${record.autoLevel ? '<div style="color: #4CAF50;">Auto</div>' : '<div style="color: #FFA726;">Manual</div>'}
+                            <div><strong>${record.nLevel}</strong>${this.i18n.t('back-suffix')}</div>
+                            <div>${record.actualTime || record.sessionTime || record.plannedTime}${this.i18n.t('min-suffix')}</div>
+                            <div>${record.rounds} ${this.i18n.t('rounds')}</div>
+                            <div>${this.i18n.t('pos-short')}: ${record.positionAccuracy}%</div>
+                            <div>${this.i18n.t('audio-short')}: ${record.audioAccuracy}%</div>
+                            <div><strong>${this.i18n.t('total-short')}: ${record.totalAccuracy}%</strong></div>
+                            ${record.autoLevel ? `<div style="color: #4CAF50;">${this.i18n.t('auto-short')}</div>` : `<div style="color: #FFA726;">${this.i18n.t('manual-short')}</div>`}
                         </div>
                     </div>
                 `).join('');
@@ -1152,9 +1361,9 @@
                     this.saveTrainingRecord(accuracy);
                 }
                 
-                this.elements.startBtn.textContent = 'Start Game';
-                this.elements.instructions.textContent = 'Game stopped. Press Start to begin training.';
-                this.elements.timerDisplay.textContent = 'Ready to start';
+                this.elements.startBtn.textContent = this.i18n.t('start-game');
+                this.elements.instructions.textContent = this.i18n.t('game-stopped');
+                this.elements.timerDisplay.textContent = this.i18n.t('ready-to-start');
                 this.elements.grid.classList.remove('active');
                 this.elements.progressFill.style.width = '0%';
                 this.clearActiveSquares();
@@ -1338,34 +1547,6 @@
                 }
             }
 
-            levelUp() {
-                const oldLevel = this.nLevel;
-                this.nLevel++;
-                this.elements.nLevel.value = this.nLevel;
-                
-                // Clear recent trials to avoid immediate level changes
-                this.recentTrials = [];
-                
-                // Show notification
-                this.showLevelChangeNotification(`Level Up! Now playing ${this.nLevel}-Back`, false);
-                
-                console.log(`Auto level up: ${oldLevel}-Back → ${this.nLevel}-Back`);
-            }
-
-            levelDown() {
-                const oldLevel = this.nLevel;
-                this.nLevel--;
-                this.elements.nLevel.value = this.nLevel;
-                
-                // Clear recent trials to avoid immediate level changes
-                this.recentTrials = [];
-                
-                // Show notification
-                this.showLevelChangeNotification(`Level Down: Now playing ${this.nLevel}-Back`, true);
-                
-                console.log(`Auto level down: ${oldLevel}-Back → ${this.nLevel}-Back`);
-            }
-
             showLevelChangeNotification(message, isLevelDown) {
                 const notification = this.elements.levelChangeNotification;
                 notification.textContent = message;
@@ -1381,6 +1562,34 @@
                 setTimeout(() => {
                     notification.classList.remove('show');
                 }, 3000);
+            }
+
+            levelUp() {
+                const oldLevel = this.nLevel;
+                this.nLevel++;
+                this.elements.nLevel.value = this.nLevel;
+                
+                // Clear recent trials to avoid immediate level changes
+                this.recentTrials = [];
+                
+                // Show notification
+                this.showLevelChangeNotification(this.i18n.t('level-up', this.nLevel), false);
+                
+                console.log(`Auto level up: ${oldLevel}-Back → ${this.nLevel}-Back`);
+            }
+
+            levelDown() {
+                const oldLevel = this.nLevel;
+                this.nLevel--;
+                this.elements.nLevel.value = this.nLevel;
+                
+                // Clear recent trials to avoid immediate level changes
+                this.recentTrials = [];
+                
+                // Show notification
+                this.showLevelChangeNotification(this.i18n.t('level-down', this.nLevel), true);
+                
+                console.log(`Auto level down: ${oldLevel}-Back → ${this.nLevel}-Back`);
             }
 
             calculateAccuracy() {
