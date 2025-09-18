@@ -1440,19 +1440,25 @@
                 for (let i = this.nLevel; i < this.sequence.length; i++) {
                     const targetIndex = i - this.nLevel;
                     
-                    // Visual matching
+                    // Visual matching - only count if user actually pressed the visual button
                     const visualMatch = this.sequence[i].visual === this.sequence[targetIndex].visual;
-                    const visualResponse = this.visualResponses[i] || false;
+                    const visualResponse = this.visualResponses[i];
                     
-                    if (visualMatch === visualResponse) visualCorrect++;
-                    visualTotal++;
+                    // Only count this trial if the user actually responded (pressed the button)
+                    if (visualResponse !== undefined) {
+                        visualTotal++;
+                        if (visualMatch === visualResponse) visualCorrect++;
+                    }
                     
-                    // Audio matching
+                    // Audio matching - only count if user actually pressed the audio button
                     const audioMatch = this.sequence[i].audio === this.sequence[targetIndex].audio;
-                    const audioResponse = this.audioResponses[i] || false;
+                    const audioResponse = this.audioResponses[i];
                     
-                    if (audioMatch === audioResponse) audioCorrect++;
-                    audioTotal++;
+                    // Only count this trial if the user actually responded (pressed the button)
+                    if (audioResponse !== undefined) {
+                        audioTotal++;
+                        if (audioMatch === audioResponse) audioCorrect++;
+                    }
                 }
                 
                 return {
