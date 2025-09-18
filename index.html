@@ -430,6 +430,7 @@
             </div>
             
             <button id="testAudioBtn">Test Audio</button>
+            <button id="recoverVoiceBtn" title="Fix voice issues on macOS">Fix Voice</button>
             <button id="startBtn">Start Game</button>
         </div>
 
@@ -536,11 +537,15 @@
                 // Records system
                 this.trainingRecords = this.loadRecords();
                 
+                // Initialize elements and state
                 this.initializeElements();
                 this.setupEventListeners();
                 this.createAudioContext();
                 this.setupSpeechSynthesis();
                 this.displayRecords();
+                
+                // macOS compatibility: Add periodic voice health check
+                this.startVoiceHealthMonitoring();
             }
 
             initializeElements() {
@@ -551,6 +556,7 @@
                     autoLevel: document.getElementById('autoLevel'),
                     startBtn: document.getElementById('startBtn'),
                     testAudioBtn: document.getElementById('testAudioBtn'),
+                    recoverVoiceBtn: document.getElementById('recoverVoiceBtn'),
                     clearRecordsBtn: document.getElementById('clearRecordsBtn'),
                     grid: document.getElementById('grid'),
                     squares: document.querySelectorAll('.square'),
@@ -575,6 +581,7 @@
             setupEventListeners() {
                 this.elements.startBtn.addEventListener('click', () => this.toggleGame());
                 this.elements.testAudioBtn.addEventListener('click', () => this.testAudio());
+                this.elements.recoverVoiceBtn.addEventListener('click', () => this.recoverVoices());
                 this.elements.clearRecordsBtn.addEventListener('click', () => this.clearRecords());
                 this.elements.visualBtn.addEventListener('click', () => this.recordResponse('visual'));
                 this.elements.audioBtn.addEventListener('click', () => this.recordResponse('audio'));
@@ -608,6 +615,8 @@
             }
 
             testAudio() {
+                console.log('=== Audio Diagnostic Test ===');
+                
                 // Initialize audio context if needed
                 if (!this.audioContext) {
                     try {
@@ -624,36 +633,110 @@
                 if (this.audioContext.state === 'suspended') {
                     this.audioContext.resume().then(() => {
                         console.log('Audio context resumed for test');
-                        this.playTestSounds();
+                        this.runAudioDiagnostic();
                     }).catch(error => {
                         console.error('Failed to resume audio context:', error);
                         alert('Audio context could not be resumed');
                     });
                 } else {
-                    this.playTestSounds();
+                    this.runAudioDiagnostic();
                 }
+            }
+            
+            runAudioDiagnostic() {
+                console.log('=== Running Audio Diagnostic ===');
+                console.log('User Agent:', navigator.userAgent);
+                console.log('Platform:', navigator.platform);
+                
+                // Check for macOS
+                const isMacOS = navigator.platform.includes('Mac') || navigator.userAgent.includes('Mac');
+                if (isMacOS) {
+                    console.log('🍎 macOS detected - using macOS-specific compatibility fixes');
+                }
+                
+                // Test speech synthesis voices
+                if ('speechSynthesis' in window) {
+                    const voices = speechSynthesis.getVoices();
+                    console.log(`Found ${voices.length} voices:`);
+                    
+                    voices.forEach((voice, index) => {
+                        const status = voice === this.voice ? '✅ SELECTED' : '';
+                        console.log(`${index + 1}. ${voice.name} (${voice.lang}) - Local: ${voice.localService}, Default: ${voice.default} ${status}`);
+                    });
+                    
+                    if (this.voice) {
+                        console.log('Currently selected voice:', this.voice.name);
+                        console.log('Voice ready:', this.voiceReady);
+                        console.log('Speech enabled:', this.useSpeech);
+                        
+                        // Check for problematic voice patterns on macOS
+                        if (isMacOS && (this.voice.name.includes('Enhanced') || this.voice.name.includes('Premium'))) {
+                            console.warn('⚠️  Warning: Selected voice may have issues on recent macOS versions');
+                        }
+                    } else {
+                        console.log('❌ No voice currently selected');
+                    }
+                    
+                    // Check speechSynthesis state
+                    console.log('Speech synthesis state:');
+                    console.log('- Speaking:', speechSynthesis.speaking);
+                    console.log('- Pending:', speechSynthesis.pending);
+                    console.log('- Paused:', speechSynthesis.paused);
+                    
+                } else {
+                    console.log('❌ Speech synthesis not available');
+                }
+                
+                // Check audio context
+                if (this.audioContext) {
+                    console.log('Audio context state:', this.audioContext.state);
+                    console.log('Audio context sample rate:', this.audioContext.sampleRate);
+                } else {
+                    console.log('❌ No audio context');
+                }
+                
+                // Run the actual tests
+                this.playTestSounds();
             }
 
             playTestSounds() {
-                console.log('Playing test sounds...');
+                console.log('=== Playing test sounds ===');
                 
-                // Play correct sound
-                setTimeout(() => {
-                    console.log('Testing correct sound...');
-                    this.playFeedbackSound(true);
-                }, 100);
+                // Test different types of audio
+                const testSequence = [
+                    { delay: 100, action: () => {
+                        console.log('Testing correct feedback sound...');
+                        this.playFeedbackSound(true);
+                    }},
+                    { delay: 800, action: () => {
+                        console.log('Testing incorrect feedback sound...');
+                        this.playFeedbackSound(false);
+                    }},
+                    { delay: 1500, action: () => {
+                        console.log('Testing letter C with current audio system...');
+                        this.playTone('C');
+                    }},
+                    { delay: 2500, action: () => {
+                        console.log('Testing letter H with current audio system...');
+                        this.playTone('H');
+                    }},
+                    { delay: 3500, action: () => {
+                        console.log('Testing letter K with current audio system...');
+                        this.playTone('K');
+                    }},
+                    { delay: 4500, action: () => {
+                        if (this.useSpeech && this.voiceReady) {
+                            console.log('✅ Speech synthesis is working');
+                        } else {
+                            console.log('⚠️  Using Web Audio fallback - speech synthesis not working');
+                        }
+                        console.log('=== Audio test complete ===');
+                    }}
+                ];
                 
-                // Play incorrect sound
-                setTimeout(() => {
-                    console.log('Testing incorrect sound...');
-                    this.playFeedbackSound(false);
-                }, 800);
-                
-                // Test letter sound
-                setTimeout(() => {
-                    console.log('Testing letter sound...');
-                    this.playTone('C');
-                }, 1500);
+                testSequence.forEach(test => {
+                    setTimeout(test.action, test.delay);
+                });
             }
 
             createAudioContext() {
@@ -672,16 +755,29 @@
 
             setupSpeechSynthesis() {
                 if ('speechSynthesis' in window) {
-                    // Set up voice selection
+                    this.voiceInitialized = false;
+                    this.voiceReady = false;
+                    
+                    // Set up voice selection with retry logic
                     this.setupVoice();
                     
                     // Handle the case where voices aren't loaded yet
                     if (speechSynthesis.getVoices().length === 0) {
                         speechSynthesis.addEventListener('voiceschanged', () => {
+                            console.log('Voices changed event triggered');
                             this.setupVoice();
                         });
                     }
-                    console.log('Speech synthesis initialized');
+                    
+                    // macOS fix: Force voice loading after a delay
+                    setTimeout(() => {
+                        if (!this.voiceReady) {
+                            console.log('Voice not ready after timeout, forcing setup');
+                            this.setupVoice();
+                        }
+                    }, 1000);
+                    
+                    console.log('Speech synthesis initialized with macOS compatibility fixes');
                 } else {
                     console.warn('Speech synthesis not supported, using Web Audio API fallback');
                 }
@@ -689,33 +785,143 @@
 
             setupVoice() {
                 const voices = speechSynthesis.getVoices();
-                // Prefer English voices, prioritize system voices
-                this.voice = voices.find(voice => 
-                    voice.lang.startsWith('en') && voice.localService
-                ) || voices.find(voice => 
-                    voice.lang.startsWith('en')
-                ) || voices[0];
+                console.log('Available voices:', voices.length);
+                
+                if (voices.length === 0) {
+                    console.log('No voices available yet, will retry when voices load');
+                    this.voiceReady = false;
+                    return;
+                }
+                
+                // macOS compatibility: Filter out problematic voices and prefer working ones
+                const workingVoices = voices.filter(voice => {
+                    // Filter out voices known to be problematic on recent macOS
+                    const problematicNames = [
+                        'Enhanced',  // macOS Enhanced voices can be corrupted
+                        'Premium',   // Premium voices may not work properly
+                        'Compact'    // Compact voices can sound distorted
+                    ];
+                    
+                    return !problematicNames.some(problematic => 
+                        voice.name.toLowerCase().includes(problematic.toLowerCase())
+                    );
+                });
+                
+                console.log('Filtered working voices:', workingVoices.length);
+                
+                // Priority selection for macOS compatibility
+                this.voice = 
+                    // First try: Local English voices (most reliable on macOS)
+                    workingVoices.find(voice => 
+                        voice.lang.startsWith('en') && voice.localService && voice.default
+                    ) ||
+                    workingVoices.find(voice => 
+                        voice.lang.startsWith('en') && voice.localService
+                    ) ||
+                    // Second try: Any English voice that's not known to be problematic
+                    workingVoices.find(voice => 
+                        voice.lang.startsWith('en') && 
+                        (voice.name.includes('Alex') || voice.name.includes('Samantha') || voice.name.includes('Victoria'))
+                    ) ||
+                    // Third try: Any working English voice
+                    workingVoices.find(voice => voice.lang.startsWith('en')) ||
+                    // Last resort: First working voice
+                    workingVoices[0];
                 
                 if (this.voice) {
-                    console.log('Selected voice:', this.voice.name, this.voice.lang);
+                    console.log('Selected voice for macOS compatibility:', {
+                        name: this.voice.name,
+                        lang: this.voice.lang,
+                        localService: this.voice.localService,
+                        default: this.voice.default
+                    });
+                    
+                    // Test the voice to ensure it works
+                    this.testVoiceHealth();
+                    this.voiceReady = true;
                 } else {
-                    console.warn('No suitable voice found for speech synthesis');
+                    console.warn('No suitable voice found, will use Web Audio API fallback');
+                    this.voiceReady = false;
+                    this.useSpeech = false; // Disable speech synthesis
+                }
+            }
+            
+            testVoiceHealth() {
+                if (!this.voice) return;
+                
+                try {
+                    // Create a silent test utterance to check if voice works
+                    const testUtterance = new SpeechSynthesisUtterance('');
+                    testUtterance.voice = this.voice;
+                    testUtterance.volume = 0; // Silent test
+                    testUtterance.rate = 1.0;
+                    testUtterance.pitch = 1.0;
+                    
+                    testUtterance.onerror = (event) => {
+                        console.warn('Voice health check failed:', event.error, 'Switching to Web Audio fallback');
+                        this.voiceReady = false;
+                        this.useSpeech = false;
+                    };
+                    
+                    testUtterance.onend = () => {
+                        console.log('Voice health check passed');
+                        this.voiceReady = true;
+                    };
+                    
+                    // Cancel any existing speech and test
+                    speechSynthesis.cancel();
+                    speechSynthesis.speak(testUtterance);
+                    
+                } catch (error) {
+                    console.warn('Voice health test failed:', error, 'Using Web Audio fallback');
+                    this.voiceReady = false;
+                    this.useSpeech = false;
                 }
             }
 
             playTone(letter) {
-                if (this.useSpeech && 'speechSynthesis' in window && this.voice) {
-                    // Use speech synthesis for clear letter pronunciation
-                    const utterance = new SpeechSynthesisUtterance(letter.toLowerCase());
-                    utterance.voice = this.voice;
-                    utterance.rate = 1.2;
-                    utterance.pitch = 1.0;
-                    utterance.volume = 0.8;
-                    
-                    // Cancel any ongoing speech and speak the letter
-                    speechSynthesis.cancel();
-                    speechSynthesis.speak(utterance);
-                    console.log('Playing letter with speech synthesis:', letter);
+                if (this.useSpeech && 'speechSynthesis' in window && this.voice && this.voiceReady) {
+                    // Use speech synthesis with macOS compatibility fixes
+                    try {
+                        const utterance = new SpeechSynthesisUtterance(letter.toLowerCase());
+                        utterance.voice = this.voice;
+                        
+                        // macOS compatibility: Adjust parameters for better reliability
+                        utterance.rate = 0.9;  // Slightly slower for better clarity on macOS
+                        utterance.pitch = 1.0; // Keep neutral pitch
+                        utterance.volume = 0.8; // Slightly lower volume to prevent distortion
+                        
+                        // Add error handling for macOS issues
+                        utterance.onerror = (event) => {
+                            console.warn('Speech synthesis error:', event.error, 'Falling back to Web Audio');
+                            this.useSpeech = false; // Temporarily disable speech
+                            this.playTone(letter); // Retry with Web Audio
+                            
+                            // Re-enable speech after a delay (voice might recover)
+                            setTimeout(() => {
+                                this.useSpeech = true;
+                                this.setupVoice(); // Re-setup voice
+                            }, 5000);
+                        };
+                        
+                        utterance.onstart = () => {
+                            console.log('Speech synthesis started for letter:', letter);
+                        };
+                        
+                        utterance.onend = () => {
+                            console.log('Speech synthesis completed for letter:', letter);
+                        };
+                        
+                        // Cancel any ongoing speech and speak the letter
+                        speechSynthesis.cancel();
+                        speechSynthesis.speak(utterance);
+                        console.log('Playing letter with speech synthesis (macOS optimized):', letter);
+                        
+                    } catch (error) {
+                        console.warn('Speech synthesis failed:', error, 'Using Web Audio fallback');
+                        this.useSpeech = false;
+                        this.playTone(letter); // Retry with Web Audio
+                    }
                 } else {
                     // Fallback to improved Web Audio API tones
                     if (!this.audioContext) return;
@@ -1078,6 +1284,43 @@
                 `).join('');
                 
                 console.log('Records displayed:', this.trainingRecords.length); // Debug log
+            }
+
+            startVoiceHealthMonitoring() {
+                // Check voice health periodically (helpful for macOS where voices can become corrupted)
+                setInterval(() => {
+                    if (this.useSpeech && 'speechSynthesis' in window) {
+                        // Check if voices are still available
+                        const currentVoices = speechSynthesis.getVoices();
+                        if (currentVoices.length === 0 && this.voiceReady) {
+                            console.log('Voices disappeared, attempting recovery...');
+                            this.voiceReady = false;
+                            this.setupVoice();
+                        }
+                        
+                        // Re-setup voice if it's lost
+                        if (!this.voice && currentVoices.length > 0) {
+                            console.log('Voice lost, attempting to recover...');
+                            this.setupVoice();
+                        }
+                    }
+                }, 30000); // Check every 30 seconds
+            }
+            
+            // Manual voice recovery for troubleshooting
+            recoverVoices() {
+                console.log('Manual voice recovery initiated...');
+                speechSynthesis.cancel(); // Clear any stuck speech
+                
+                // Force voice reload
+                this.voiceReady = false;
+                this.voice = null;
+                
+                // Wait a moment then re-setup
+                setTimeout(() => {
+                    this.setupVoice();
+                    console.log('Voice recovery complete');
+                }, 500);
             }
 
             clearRecords() {
