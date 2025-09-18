@@ -635,7 +635,8 @@
             }
 
             playTestSounds() {
-                console.log('Playing test sounds...');
+                const mode = this.useSpeech ? 'speech synthesis' : 'tone';
+                console.log(`Playing test sounds in ${mode} mode...`);
                 
                 // Play correct sound
                 setTimeout(() => {
@@ -649,11 +650,11 @@
                     this.playFeedbackSound(false);
                 }, 800);
                 
-                // Test letter sounds with speech synthesis
+                // Test letter sounds
                 const testLetters = ['C', 'H', 'K', 'L'];
                 testLetters.forEach((letter, index) => {
                     setTimeout(() => {
-                        console.log(`Testing letter sound: ${letter}`);
+                        console.log(`Testing letter sound: ${letter} (${mode})`);
                         this.playTone(letter);
                     }, 1500 + (index * 800));
                 });
@@ -663,6 +664,8 @@
                 // Don't create audio context immediately - wait for user interaction
                 this.audioContext = null;
                 this.useSpeech = true; // Enable speech synthesis by default
+                this.speechQualityIssues = 0; // Track speech synthesis issues
+                this.maxSpeechIssues = 3; // Switch to tones after 3 issues
                 
                 // More distinct frequency mapping for better differentiation
                 this.letterFrequencies = {
@@ -683,29 +686,48 @@
                     return;
                 }
 
-                const voices = speechSynthesis.getVoices();
-                
-                if (voices.length === 0) {
-                    // Voices not loaded yet, set up listener
-                    speechSynthesis.onvoiceschanged = () => {
-                        const newVoices = speechSynthesis.getVoices();
-                        this.selectBestVoice(newVoices);
-                    };
-                } else {
+                // Force voice loading on macOS 26+ by triggering voice enumeration
+                const loadVoices = () => {
+                    const voices = speechSynthesis.getVoices();
+                    console.log(`Found ${voices.length} voices available`);
+                    
+                    if (voices.length === 0) {
+                        // Try again after a short delay
+                        setTimeout(loadVoices, 100);
+                        return;
+                    }
+                    
                     this.selectBestVoice(voices);
-                }
+                };
+
+                // Set up voice change listener
+                speechSynthesis.onvoiceschanged = loadVoices;
+                
+                // Start loading voices
+                loadVoices();
             }
 
             selectBestVoice(voices) {
-                // Prefer English voices, prioritize system voices
+                console.log('Available voices:', voices.map(v => `${v.name} (${v.lang}) - local: ${v.localService}`));
+                
+                // Enhanced voice selection for macOS 26+ compatibility
+                // Prefer high-quality system voices with better audio quality
                 this.voice = voices.find(voice => 
+                    voice.lang.startsWith('en') && 
+                    voice.localService && 
+                    (voice.name.includes('Enhanced') || voice.name.includes('Premium') || voice.name.includes('High Quality'))
+                ) || voices.find(voice => 
+                    voice.lang.startsWith('en') && 
+                    voice.localService && 
+                    (voice.name.includes('Alex') || voice.name.includes('Samantha') || voice.name.includes('Victoria'))
+                ) || voices.find(voice => 
                     voice.lang.startsWith('en') && voice.localService
                 ) || voices.find(voice => 
                     voice.lang.startsWith('en')
                 ) || voices[0];
                 
                 if (this.voice) {
-                    console.log(`Selected voice: ${this.voice.name} (${this.voice.lang})`);
+                    console.log(`Selected voice: ${this.voice.name} (${this.voice.lang}) - local: ${this.voice.localService}`);
                 } else {
                     console.log('No suitable voice found, using fallback tones');
                     this.useSpeech = false;
@@ -739,17 +761,33 @@
                             console.log('No specific voice set, using default');
                         }
                         
-                        utterance.rate = 1.0; // Slower for clarity
-                        utterance.pitch = 1.0;
-                        utterance.volume = 0.9; // Higher volume
+                        // Optimized settings for macOS 26+ compatibility
+                        utterance.rate = 0.8; // Slower for better clarity and less hoarse sound
+                        utterance.pitch = 0.9; // Slightly lower pitch to reduce harshness
+                        utterance.volume = 0.8; // Moderate volume to prevent distortion
                         
                         // Add event listeners for debugging
                         utterance.onstart = () => console.log(`Started speaking: ${letter}`);
                         utterance.onend = () => console.log(`Finished speaking: ${letter}`);
                         utterance.onerror = (event) => {
                             console.error('Speech synthesis error:', event.error);
+                            this.speechQualityIssues++;
+                            console.log(`Speech quality issues: ${this.speechQualityIssues}/${this.maxSpeechIssues}`);
+                            
+                            // Switch to tones if too many issues
+                            if (this.speechQualityIssues >= this.maxSpeechIssues) {
+                                console.log('Too many speech synthesis issues, switching to tone fallback');
+                                this.useSpeech = false;
+                            }
+                            
                             // Fallback to tones on error
                             this.playFallbackTone(letter);
+                        };
+                        
+                        // Add additional error handling for macOS 26+ compatibility
+                        utterance.onboundary = (event) => {
+                            // Handle speech boundary events for better compatibility
+                            console.log(`Speech boundary: ${event.name} at ${event.charIndex}`);
                         };
                         
                         // Cancel any ongoing speech and speak the letter
@@ -775,24 +813,36 @@
                 }
                 
                 try {
+                    // Resume audio context if needed
+                    if (this.audioContext.state === 'suspended') {
+                        this.audioContext.resume();
+                    }
+                    
                     const frequency = this.letterFrequencies[letter];
                     const oscillator = this.audioContext.createOscillator();
                     const gainNode = this.audioContext.createGain();
                     
-                    oscillator.connect(gainNode);
+                    // Add a filter for better sound quality
+                    const filter = this.audioContext.createBiquadFilter();
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(2000, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(1, this.audioContext.currentTime);
+                    
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
                     gainNode.connect(this.audioContext.destination);
                     
-                    // Use sawtooth wave for more distinctive sound
-                    oscillator.type = 'sawtooth';
+                    // Use triangle wave for cleaner, less harsh sound
+                    oscillator.type = 'triangle';
                     oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
                     
-                    // Envelope for more natural sound
+                    // Smoother envelope for more natural sound
                     gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
-                    gainNode.gain.linearRampToValueAtTime(0.3, this.audioContext.currentTime + 0.05);
-                    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.6);
+                    gainNode.gain.linearRampToValueAtTime(0.2, this.audioContext.currentTime + 0.1);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.8);
                     
                     oscillator.start(this.audioContext.currentTime);
-                    oscillator.stop(this.audioContext.currentTime + 0.6);
+                    oscillator.stop(this.audioContext.currentTime + 0.8);
                 } catch (error) {
                     console.error('Error playing fallback tone:', error);
                 }
