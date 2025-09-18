@@ -1455,30 +1455,32 @@
 
             calculateAccuracy() {
                 let visualCorrect = 0, audioCorrect = 0;
-                let visualTotal = 0, audioTotal = 0;
+                let visualMatches = 0, audioMatches = 0; // Only count actual matches (should press situations)
                 
                 for (let i = this.nLevel; i < this.sequence.length; i++) {
                     const targetIndex = i - this.nLevel;
                     
-                    // Visual matching
+                    // Visual matching - only count when there IS a match (button should be pressed)
                     const visualMatch = this.sequence[i].visual === this.sequence[targetIndex].visual;
-                    const visualResponse = this.visualResponses[i] || false;
+                    if (visualMatch) {
+                        visualMatches++; // This is a situation where button should be pressed
+                        const visualResponse = this.visualResponses[i] || false;
+                        if (visualResponse) visualCorrect++; // User correctly identified the match
+                    }
                     
-                    if (visualMatch === visualResponse) visualCorrect++;
-                    visualTotal++;
-                    
-                    // Audio matching
+                    // Audio matching - only count when there IS a match (button should be pressed)
                     const audioMatch = this.sequence[i].audio === this.sequence[targetIndex].audio;
-                    const audioResponse = this.audioResponses[i] || false;
-                    
-                    if (audioMatch === audioResponse) audioCorrect++;
-                    audioTotal++;
+                    if (audioMatch) {
+                        audioMatches++; // This is a situation where button should be pressed
+                        const audioResponse = this.audioResponses[i] || false;
+                        if (audioResponse) audioCorrect++; // User correctly identified the match
+                    }
                 }
                 
                 return {
-                    visual: visualTotal > 0 ? Math.round((visualCorrect / visualTotal) * 100) : 0,
-                    audio: audioTotal > 0 ? Math.round((audioCorrect / audioTotal) * 100) : 0,
-                    total: (visualTotal + audioTotal) > 0 ? Math.round(((visualCorrect + audioCorrect) / (visualTotal + audioTotal)) * 100) : 0
+                    visual: visualMatches > 0 ? Math.round((visualCorrect / visualMatches) * 100) : 0,
+                    audio: audioMatches > 0 ? Math.round((audioCorrect / audioMatches) * 100) : 0,
+                    total: (visualMatches + audioMatches) > 0 ? Math.round(((visualCorrect + audioCorrect) / (visualMatches + audioMatches)) * 100) : 0
                 };
             }
 
