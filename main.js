@@ -19,8 +19,11 @@ if (!gotTheLock) {
 
   function createWindow() {
     const win = new BrowserWindow({
-      width: 900,
-      height: 700,
+      width: 1600,
+      height: 1200,
+      minWidth: 1200,
+      minHeight: 800,
+      resizable: true,
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true

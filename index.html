@@ -16,60 +16,74 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            min-height: 100vh;
+            height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
             user-select: none;
+            margin: 0;
+            padding: 0;
         }
 
         .container {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(20px);
             border-radius: 20px;
-            padding: 40px;
+            padding: 20px;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
             border: 1px solid rgba(255, 255, 255, 0.2);
-            max-width: 600px;
-            width: 90%;
+            max-width: 95vw;
+            width: 95%;
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+            margin-top: 20px;
         }
 
         h1 {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
+            margin-top: 10px;
             font-weight: 300;
-            font-size: 2.5em;
+            font-size: 2.2em;
             text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         }
 
         .controls {
-            display: flex;
-            justify-content: space-between;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 8px;
+            margin-bottom: 20px;
+            margin-top: 10px;
+            flex-shrink: 0;
             align-items: center;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-            gap: 15px;
         }
 
         .control-group {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 5px;
+            flex-shrink: 0;
+            white-space: nowrap;
+            justify-content: center;
         }
 
         label {
             font-weight: 500;
+            font-size: 11px;
         }
 
         select, button {
             background: rgba(255, 255, 255, 0.2);
             border: 1px solid rgba(255, 255, 255, 0.3);
             color: white;
-            padding: 10px 15px;
-            border-radius: 10px;
-            font-size: 14px;
+            padding: 5px 8px;
+            border-radius: 6px;
+            font-size: 11px;
             cursor: pointer;
             transition: all 0.3s ease;
+            flex-shrink: 0;
+            min-width: fit-content;
         }
 
         select:hover, button:hover {
@@ -90,22 +104,29 @@
         .game-area {
             background: rgba(0, 0, 0, 0.3);
             border-radius: 15px;
-            padding: 30px;
+            padding: 20px;
             margin-bottom: 20px;
-            min-height: 400px;
+            min-height: 50vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            flex: 1;
+            overflow: hidden;
+            position: relative;
         }
 
         .grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 15px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             opacity: 0;
             transition: opacity 0.3s ease;
+            justify-items: center;
+            align-items: center;
+            width: 450px;
+            height: 450px;
         }
 
         .grid.active {
@@ -113,19 +134,21 @@
         }
 
         .square {
-            width: 80px;
-            height: 80px;
+            width: 100%;
+            height: 100%;
+            aspect-ratio: 1;
             background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 10px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
             transition: all 0.3s ease;
             cursor: pointer;
         }
 
         .square.active {
             background: #4CAF50;
-            box-shadow: 0 0 20px rgba(76, 175, 80, 0.5);
+            box-shadow: 0 0 30px rgba(76, 175, 80, 0.8);
             border-color: #4CAF50;
+            transform: scale(1.05);
         }
 
         .square.clicked {
@@ -148,8 +171,8 @@
 
         .instructions {
             text-align: center;
-            margin-bottom: 20px;
-            font-size: 18px;
+            margin-bottom: 15px;
+            font-size: 16px;
             opacity: 0.8;
         }
 
@@ -157,8 +180,9 @@
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 15px;
-            margin-top: 20px;
-            margin-bottom: 20px;
+            margin-top: 15px;
+            margin-bottom: 15px;
+            flex-shrink: 0;
         }
 
         .records-section {
@@ -253,16 +277,20 @@
 
         .response-buttons {
             display: flex;
-            gap: 20px;
-            margin-top: 20px;
+            gap: 15px;
+            margin-top: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            flex-shrink: 0;
         }
 
         .response-btn {
-            padding: 15px 25px;
-            font-size: 16px;
-            border-radius: 25px;
+            padding: 12px 20px;
+            font-size: 14px;
+            border-radius: 20px;
             font-weight: bold;
-            min-width: 120px;
+            min-width: 100px;
+            flex-shrink: 0;
         }
 
         .response-btn.visual {
@@ -374,6 +402,54 @@
 
         .pulse {
             animation: pulse 0.5s ease-in-out;
+        }
+
+        /* Responsive breakpoints */
+        @media (max-width: 1600px) {
+            .controls {
+                gap: 6px;
+            }
+            
+            .control-group {
+                gap: 4px;
+            }
+        }
+
+        @media (max-width: 1400px) {
+            .controls {
+                gap: 5px;
+            }
+            
+            .control-group {
+                gap: 3px;
+            }
+            
+            select, button {
+                padding: 4px 6px;
+                font-size: 10px;
+            }
+            
+            label {
+                font-size: 10px;
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .controls {
+                flex-direction: column;
+                gap: 4px;
+            }
+            
+            .container {
+                width: 98%;
+                height: 98vh;
+                padding: 15px;
+            }
+            
+            .game-area {
+                min-height: 50vh;
+                padding: 5px;
+            }
         }
     </style>
 </head>
@@ -504,10 +580,11 @@
     <script>
         class DualNBack {
             constructor() {
-                this.nLevel = 2;
-                this.speed = 2500;
-                this.sessionTime = 20; // minutes
-                this.autoLevel = true; // Auto level up enabled by default
+                // Load last used settings or use defaults
+                this.nLevel = this.loadSetting('lastNLevel', 2);
+                this.speed = this.loadSetting('lastSpeed', 2500);
+                this.sessionTime = this.loadSetting('lastSessionTime', 20); // minutes
+                this.autoLevel = this.loadSetting('lastAutoLevel', true); // Auto level up enabled by default
                 this.isRunning = false;
                 this.round = 0;
                 
@@ -541,6 +618,7 @@
                 this.setupEventListeners();
                 this.createAudioContext();
                 this.displayRecords();
+                this.restoreLastSettings();
             }
 
             initializeElements() {
@@ -572,6 +650,70 @@
                 };
             }
 
+            // Settings persistence methods
+            loadSetting(key, defaultValue) {
+                try {
+                    const stored = localStorage.getItem(key);
+                    if (stored !== null) {
+                        // Handle boolean values
+                        if (defaultValue === true || defaultValue === false) {
+                            return stored === 'true';
+                        }
+                        // Handle numeric values
+                        if (typeof defaultValue === 'number') {
+                            return parseInt(stored);
+                        }
+                        return stored;
+                    }
+                } catch (error) {
+                    console.error('Error loading setting:', error);
+                }
+                return defaultValue;
+            }
+
+            saveSetting(key, value) {
+                try {
+                    localStorage.setItem(key, value.toString());
+                } catch (error) {
+                    console.error('Error saving setting:', error);
+                }
+            }
+
+            restoreLastSettings() {
+                // Restore N-level
+                this.elements.nLevel.value = this.nLevel;
+                
+                // Restore speed
+                this.elements.speed.value = this.speed;
+                
+                // Restore session time
+                this.elements.sessionTime.value = this.sessionTime;
+                
+                // Restore auto level
+                this.elements.autoLevel.value = this.autoLevel ? 'on' : 'off';
+                
+                console.log('Restored last settings:', {
+                    nLevel: this.nLevel,
+                    speed: this.speed,
+                    sessionTime: this.sessionTime,
+                    autoLevel: this.autoLevel
+                });
+            }
+
+            saveCurrentSettings() {
+                this.saveSetting('lastNLevel', this.nLevel);
+                this.saveSetting('lastSpeed', this.speed);
+                this.saveSetting('lastSessionTime', this.sessionTime);
+                this.saveSetting('lastAutoLevel', this.autoLevel);
+                
+                console.log('Saved current settings:', {
+                    nLevel: this.nLevel,
+                    speed: this.speed,
+                    sessionTime: this.sessionTime,
+                    autoLevel: this.autoLevel
+                });
+            }
+
             setupEventListeners() {
                 this.elements.startBtn.addEventListener('click', () => this.toggleGame());
                 this.elements.testAudioBtn.addEventListener('click', () => this.testAudio());
@@ -591,18 +733,22 @@
 
                 this.elements.nLevel.addEventListener('change', (e) => {
                     this.nLevel = parseInt(e.target.value);
+                    this.saveCurrentSettings();
                 });
 
                 this.elements.speed.addEventListener('change', (e) => {
                     this.speed = parseInt(e.target.value);
+                    this.saveCurrentSettings();
                 });
 
                 this.elements.sessionTime.addEventListener('change', (e) => {
                     this.sessionTime = parseInt(e.target.value);
+                    this.saveCurrentSettings();
                 });
 
                 this.elements.autoLevel.addEventListener('change', (e) => {
                     this.autoLevel = e.target.value === 'on';
+                    this.saveCurrentSettings();
                     console.log('Auto level up:', this.autoLevel ? 'enabled' : 'disabled');
                 });
             }
@@ -1094,6 +1240,9 @@
                 // Save training record
                 this.saveTrainingRecord(accuracy);
                 
+                // Save current settings for next session
+                this.saveCurrentSettings();
+                
                 // Reset timer display after a few seconds
                 setTimeout(() => {
                     this.elements.timerDisplay.textContent = 'Ready to start';
@@ -1201,6 +1350,9 @@
                     const accuracy = this.calculateAccuracy();
                     this.saveTrainingRecord(accuracy);
                 }
+                
+                // Save current settings for next session
+                this.saveCurrentSettings();
                 
                 this.elements.startBtn.textContent = 'Start Game';
                 this.elements.instructions.textContent = 'Game stopped. Press Start to begin training.';
@@ -1393,6 +1545,9 @@
                 this.nLevel++;
                 this.elements.nLevel.value = this.nLevel;
                 
+                // Save the new level setting
+                this.saveCurrentSettings();
+                
                 // Clear recent trials to avoid immediate level changes
                 this.recentTrials = [];
                 
@@ -1406,6 +1561,9 @@
                 const oldLevel = this.nLevel;
                 this.nLevel--;
                 this.elements.nLevel.value = this.nLevel;
+                
+                // Save the new level setting
+                this.saveCurrentSettings();
                 
                 // Clear recent trials to avoid immediate level changes
                 this.recentTrials = [];
