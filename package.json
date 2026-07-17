@@ -6,6 +6,7 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
+    "test": "vitest run",
     "build": "electron-packager . DualNBackApp --platform=darwin --arch=arm64 --out=dist --overwrite --prune=true && xattr -cr dist/DualNBackApp-darwin-arm64/DualNBackApp.app && codesign --force --deep --sign - dist/DualNBackApp-darwin-arm64/DualNBackApp.app",
     "dist": "electron-builder"
   },
@@ -17,7 +18,7 @@
     },
     "files": [
       "main.js",
-      "index.html",
+      "src/**/*",
       "node_modules/**/*"
     ],
     "mac": {
@@ -28,6 +29,7 @@
   "devDependencies": {
     "electron": "^37.2.5",
     "electron-builder": "^26.0.12",
-    "electron-packager": "^17.1.2"
+    "electron-packager": "^17.1.2",
+    "vitest": "^3.2.0"
   }
 }

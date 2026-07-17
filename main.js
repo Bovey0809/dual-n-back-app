@@ -32,7 +32,7 @@ if (!gotTheLock) {
       icon: path.join(__dirname, 'icon.png') // Optional app icon
     });
 
-    win.loadFile('index.html');
+    win.loadFile('src/renderer/index.html');
   }
 
   app.whenReady().then(createWindow);
