@@ -4,7 +4,7 @@ const kiosk = require('./kiosk');
 const {
   loadState, saveState, ensureToday, isCompletedToday, remainingSeconds,
   accumulateSeconds, skipsRemaining, recordSkip, recordCompletion,
-  recordLaunch, isCrashLooping, clampHeartbeatDelta,
+  recordLaunch, isCrashLooping, clampHeartbeatDelta, localDateString,
 } = require('./lock-state');
 
 const DEGRADED_MS = 60 * 60 * 1000;    // spec §6: no kiosk retry for 1 hour
@@ -100,6 +100,10 @@ class LockManager {
   }
 
   complete() {
+    if (this.skipTimer) {
+      clearTimeout(this.skipTimer);
+      this.skipTimer = null;
+    }
     recordCompletion(this.state);
     saveState(this.stateDir, this.state);
     this.pushState(true);
@@ -118,6 +122,11 @@ class LockManager {
       return { ok: false, error: 'quota-exhausted' };
     }
     if (phrase !== this.config.skipPhrase) return { ok: false, error: 'wrong-phrase' };
+    const skipNow = new Date();
+    if (localDateString(skipNow) !==
+        localDateString(new Date(skipNow.getTime() + this.config.skipWaitSeconds * 1000))) {
+      return { ok: false, error: 'day-boundary' };
+    }
     // Skip is recorded only when the mandatory wait completes (kill+relaunch
     // during the wait keeps the lock and does not burn quota).
     this.skipTimer = setTimeout(() => {
