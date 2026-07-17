@@ -568,7 +568,16 @@
                     <option value="on" selected>On</option>
                 </select>
             </div>
-            
+
+            <div class="control-group" id="agentGroup">
+                <label for="agentToggle">开机锁:</label>
+                <select id="agentToggle">
+                    <option value="off" selected>Off</option>
+                    <option value="on">On</option>
+                </select>
+                <span id="agentStatusDot" style="opacity:0.85;">○</span>
+            </div>
+
             <button id="testAudioBtn">Test Audio</button>
             <button id="startBtn">Start Game</button>
         </div>
@@ -1829,6 +1838,31 @@
             LOCK.skipPhrase = state.skipPhrase;
             if (state.mode === 'DEGRADED') document.body.classList.add('degraded');
             if (LOCK.isLockMode) updateLockBanner({ ...state, unlocked: false, pausedForIdle: false });
+
+            // LaunchAgent feature toggle (normal mode only; hidden by CSS in lock mode)
+            const agentToggle = document.getElementById('agentToggle');
+            const agentDot = document.getElementById('agentStatusDot');
+            function renderAgentStatus(installed) {
+                agentToggle.value = installed ? 'on' : 'off';
+                agentDot.textContent = installed ? '●' : '○';
+                agentDot.style.color = installed ? '#4CAF50' : '';
+                agentDot.title = installed ? '开机锁已启用' : '开机锁未启用';
+            }
+            renderAgentStatus((await window.lockAPI.getAgentStatus()).installed);
+            agentToggle.addEventListener('change', async () => {
+                const enable = agentToggle.value === 'on';
+                if (enable && !confirm(
+                    '启用后:每天首次使用电脑将全屏锁定,完成 20 分钟训练才能解锁;强退会被自动拉起。确定启用?')) {
+                    renderAgentStatus(false);
+                    return;
+                }
+                if (!enable && !confirm('确定关闭开机锁?')) {
+                    renderAgentStatus(true);
+                    return;
+                }
+                const res = await window.lockAPI.setAgentEnabled(enable);
+                renderAgentStatus(res.installed);
+            });
 
             // Heartbeat every second — in both modes, so free play counts (spec §2).
             setInterval(() => {
