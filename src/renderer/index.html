@@ -480,12 +480,44 @@
         }
         body.lock-mode .lock-banner { display: block; }
         body.degraded .degraded-banner { display: block; }
+        /* ---- Idle overlay + skip modal ---- */
+        .modal-overlay {
+            position: fixed; inset: 0; z-index: 2000;
+            background: rgba(0, 0, 0, 0.75);
+            display: none; align-items: center; justify-content: center;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal-card {
+            background: rgba(30, 30, 40, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 16px; padding: 30px; max-width: 520px;
+            text-align: center; font-size: 1.1em;
+        }
+        .modal-card h2 { margin-bottom: 15px; font-weight: 400; }
+        .modal-card textarea {
+            width: 100%; min-height: 60px; margin: 12px 0; padding: 10px;
+            border-radius: 8px; border: 1px solid rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.1); color: white; font-size: 14px;
+        }
+        .modal-card .skip-phrase-hint {
+            font-size: 0.85em; opacity: 0.75; user-select: text; margin-bottom: 5px;
+        }
+        .modal-card .modal-buttons { display: flex; gap: 12px; justify-content: center; margin-top: 10px; }
+        .skip-btn {
+            background: rgba(244, 67, 54, 0.25);
+            border: 1px solid rgba(244, 67, 54, 0.5);
+            display: none;
+        }
+        body.lock-mode .skip-btn { display: inline-block; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Dual N-Back Training</h1>
-        <div class="lock-banner" id="lockBanner">🔒 完成训练解锁电脑 · 今日剩余 --:--</div>
+        <div class="lock-banner">
+            <span id="lockBanner">🔒 完成训练解锁电脑 · 今日剩余 --:--</span>
+            <button class="skip-btn" id="skipOpenBtn">紧急跳过</button>
+        </div>
         <div class="degraded-banner" id="degradedBanner">⚠️ 锁屏因连续异常暂停一小时,请自觉完成今日训练</div>
 
         <div class="controls">
@@ -606,6 +638,30 @@
         
         <!-- Level change notification -->
         <div class="level-change-notification" id="levelChangeNotification"></div>
+
+        <!-- Idle overlay (lock anti-AFK, spec §4.2) -->
+        <div class="modal-overlay" id="idleOverlay">
+            <div class="modal-card">
+                <h2>⏸ 还在吗?</h2>
+                <p>超过 90 秒没有操作,计时已暂停。</p>
+                <p>按 A / L / 空格 继续训练</p>
+            </div>
+        </div>
+
+        <!-- Emergency skip modal (spec §2 应急出口) -->
+        <div class="modal-overlay" id="skipModal">
+            <div class="modal-card">
+                <h2>紧急跳过</h2>
+                <p id="skipModalInfo">如需跳过今日训练,请一字不差输入以下句子:</p>
+                <p class="skip-phrase-hint" id="skipPhraseHint"></p>
+                <textarea id="skipInput" placeholder="在此输入…"></textarea>
+                <p id="skipError" style="color:#FF8A80; min-height:1.2em;"></p>
+                <div class="modal-buttons">
+                    <button id="skipCancelBtn">取消</button>
+                    <button id="skipConfirmBtn">确认跳过</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -617,6 +673,8 @@
                 this.sessionTime = this.loadSetting('lastSessionTime', 20); // minutes
                 this.autoLevel = this.loadSetting('lastAutoLevel', true); // Auto level up enabled by default
                 this.isRunning = false;
+                this.idlePaused = false;
+                this.idlePausedAt = null;
                 this.round = 0;
                 
                 // Auto level up settings
@@ -754,6 +812,8 @@
                 
                 // Keyboard shortcuts
                 document.addEventListener('keydown', (e) => {
+                    if (e.repeat) return;               // ignore key auto-repeat
+                    if (this.idlePaused) return;        // resume is handled by markInput()
                     if (e.key.toLowerCase() === 'a') this.recordResponse('visual');
                     if (e.key.toLowerCase() === 'l') this.recordResponse('audio');
                     if (e.key === ' ') {
@@ -1396,6 +1456,26 @@
                 this.updateStats();
             }
 
+            pauseForIdle() {
+                if (!this.isRunning || this.idlePaused) return;
+                this.idlePaused = true;
+                this.idlePausedAt = Date.now();
+                clearTimeout(this.currentTimeout);
+                clearInterval(this.timerInterval);
+                document.getElementById('idleOverlay').classList.add('show');
+            }
+
+            resumeFromIdle() {
+                if (!this.idlePaused) return;
+                this.idlePaused = false;
+                document.getElementById('idleOverlay').classList.remove('show');
+                // Shift the free-play session clock so paused time doesn't count against it
+                this.sessionStartTime += Date.now() - this.idlePausedAt;
+                this.idlePausedAt = null;
+                this.startTimer();
+                this.nextRound();
+            }
+
             nextRound() {
                 if (!this.isRunning) {
                     return;
@@ -1717,11 +1797,13 @@
             const banner = document.getElementById('lockBanner');
             if (state.unlocked) {
                 banner.textContent = '✅ 今日训练完成!电脑已解锁';
-                banner.classList.add('completed');
+                banner.parentElement.classList.add('completed');
             } else if (state.pausedForIdle) {
                 banner.textContent = `⏸ 已暂停(90 秒无操作)· 今日剩余 ${formatMMSS(state.remainingSeconds)}`;
+                banner.parentElement.classList.remove('completed');
             } else {
                 banner.textContent = `🔒 完成训练解锁电脑 · 今日剩余 ${formatMMSS(state.remainingSeconds)}`;
+                banner.parentElement.classList.remove('completed');
             }
         }
 
@@ -1755,6 +1837,54 @@
                     secondsSinceLastInput: (Date.now() - LOCK.lastInputAt) / 1000,
                 });
             }, 1000);
+
+            // Anti-AFK: renderer self-pauses; main independently stops counting (spec §4.2).
+            setInterval(() => {
+                if (!LOCK.isLockMode) return;
+                const idleFor = (Date.now() - LOCK.lastInputAt) / 1000;
+                if (LOCK.game.isRunning && !LOCK.game.idlePaused && idleFor >= LOCK.idleThresholdSeconds) {
+                    LOCK.game.pauseForIdle();
+                }
+            }, 1000);
+
+            // Emergency skip
+            const skipModal = document.getElementById('skipModal');
+            const skipError = document.getElementById('skipError');
+            const skipConfirmBtn = document.getElementById('skipConfirmBtn');
+            document.getElementById('skipPhraseHint').textContent = LOCK.skipPhrase;
+
+            document.getElementById('skipOpenBtn').addEventListener('click', async () => {
+                const s = await window.lockAPI.getState();
+                document.getElementById('skipModalInfo').textContent =
+                    `本周剩余 ${s.skipsRemaining} 次。如需跳过今日训练,请一字不差输入以下句子:`;
+                skipError.textContent = '';
+                document.getElementById('skipInput').value = '';
+                skipModal.classList.add('show');
+            });
+            document.getElementById('skipCancelBtn').addEventListener('click', () => {
+                skipModal.classList.remove('show');
+            });
+            skipConfirmBtn.addEventListener('click', async () => {
+                const phrase = document.getElementById('skipInput').value.trim();
+                const res = await window.lockAPI.requestSkip(phrase);
+                if (!res.ok) {
+                    skipError.textContent = {
+                        'wrong-phrase': '句子不一致,请一字不差地输入',
+                        'quota-exhausted': '本周跳过次数已用完',
+                        'not-locked': '当前未锁定',
+                        'skip-pending': '跳过正在等待中',
+                    }[res.error] || res.error;
+                    return;
+                }
+                skipConfirmBtn.disabled = true;
+                let left = res.waitSeconds;
+                skipError.textContent = '';
+                const tick = setInterval(() => {
+                    document.getElementById('skipModalInfo').textContent =
+                        `强制等待中… ${left} 秒后解锁`;
+                    if (left-- <= 0) clearInterval(tick);
+                }, 1000);
+            });
 
             window.lockAPI.onStateChanged((s) => {
                 if (LOCK.isLockMode) updateLockBanner(s);
