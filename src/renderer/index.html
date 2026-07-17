@@ -451,12 +451,43 @@
                 padding: 5px;
             }
         }
+        /* ---- Daily lock mode ---- */
+        body.lock-mode .records-section,
+        body.lock-mode #sessionTimeGroup,
+        body.lock-mode #agentGroup { display: none; }
+
+        .lock-banner, .degraded-banner {
+            display: none;
+            text-align: center;
+            font-size: 1.4em;
+            font-weight: bold;
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+        }
+        .lock-banner {
+            background: rgba(255, 87, 34, 0.25);
+            border: 1px solid rgba(255, 87, 34, 0.55);
+        }
+        .lock-banner.completed {
+            background: rgba(76, 175, 80, 0.35);
+            border-color: #4CAF50;
+        }
+        .degraded-banner {
+            background: rgba(255, 193, 7, 0.25);
+            border: 1px solid rgba(255, 193, 7, 0.55);
+            font-size: 1.0em;
+        }
+        body.lock-mode .lock-banner { display: block; }
+        body.degraded .degraded-banner { display: block; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Dual N-Back Training</h1>
-        
+        <div class="lock-banner" id="lockBanner">🔒 完成训练解锁电脑 · 今日剩余 --:--</div>
+        <div class="degraded-banner" id="degradedBanner">⚠️ 锁屏因连续异常暂停一小时,请自觉完成今日训练</div>
+
         <div class="controls">
             <div class="control-group">
                 <label for="nLevel">N-Level:</label>
@@ -486,7 +517,7 @@
                 </select>
             </div>
 
-            <div class="control-group">
+            <div class="control-group" id="sessionTimeGroup">
                 <label for="sessionTime">Session:</label>
                 <select id="sessionTime">
                     <option value="5">5 minutes</option>
@@ -1662,9 +1693,72 @@
             }
         }
 
-        // Initialize the game when the page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            new DualNBack();
+        // ---- Daily lock integration (spec §4.2, §4.4) ----
+        const LOCK = {
+            isLockMode: new URLSearchParams(location.search).get('mode') === 'lock',
+            lastInputAt: Date.now(),
+            idleThresholdSeconds: 90,
+            skipWaitSeconds: 60,
+            skipPhrase: '',
+            game: null,
+        };
+
+        function markInput() {
+            LOCK.lastInputAt = Date.now();
+            if (LOCK.game && LOCK.game.idlePaused) LOCK.game.resumeFromIdle();
+        }
+
+        function formatMMSS(totalSeconds) {
+            const s = Math.max(0, Math.round(totalSeconds));
+            return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+        }
+
+        function updateLockBanner(state) {
+            const banner = document.getElementById('lockBanner');
+            if (state.unlocked) {
+                banner.textContent = '✅ 今日训练完成!电脑已解锁';
+                banner.classList.add('completed');
+            } else if (state.pausedForIdle) {
+                banner.textContent = `⏸ 已暂停(90 秒无操作)· 今日剩余 ${formatMMSS(state.remainingSeconds)}`;
+            } else {
+                banner.textContent = `🔒 完成训练解锁电脑 · 今日剩余 ${formatMMSS(state.remainingSeconds)}`;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            LOCK.game = new DualNBack();
+
+            if (LOCK.isLockMode) document.body.classList.add('lock-mode');
+
+            // Valid inputs (spec §4.2): A / L / Space keys and the response/start buttons.
+            document.addEventListener('keydown', (e) => {
+                const k = e.key.toLowerCase();
+                if (k === 'a' || k === 'l' || e.key === ' ') markInput();
+            });
+            for (const id of ['visualBtn', 'audioBtn', 'startBtn']) {
+                document.getElementById(id).addEventListener('click', markInput);
+            }
+
+            if (!window.lockAPI) return; // opened directly in a browser: degrade gracefully
+
+            const state = await window.lockAPI.getState();
+            LOCK.idleThresholdSeconds = state.idleThresholdSeconds;
+            LOCK.skipWaitSeconds = state.skipWaitSeconds;
+            LOCK.skipPhrase = state.skipPhrase;
+            if (state.mode === 'DEGRADED') document.body.classList.add('degraded');
+            if (LOCK.isLockMode) updateLockBanner({ ...state, unlocked: false, pausedForIdle: false });
+
+            // Heartbeat every second — in both modes, so free play counts (spec §2).
+            setInterval(() => {
+                window.lockAPI.sendHeartbeat({
+                    gameRunning: Boolean(LOCK.game.isRunning) && !LOCK.game.idlePaused,
+                    secondsSinceLastInput: (Date.now() - LOCK.lastInputAt) / 1000,
+                });
+            }, 1000);
+
+            window.lockAPI.onStateChanged((s) => {
+                if (LOCK.isLockMode) updateLockBanner(s);
+            });
         });
     </script>
 </body>
