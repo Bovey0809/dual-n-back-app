@@ -143,6 +143,22 @@ When enabled, the system automatically adjusts difficulty:
 - **Single instance** prevention (only one app instance can run)
 - **Cross-platform** compatibility (Windows, macOS, Linux)
 
+## Daily Boot Training Lock (macOS)
+
+Turn on the **开机锁** toggle in the app to install a per-user LaunchAgent
+(`~/Library/LaunchAgents/com.dualnback.lock.plist`). From then on, the first time
+you use the Mac each day, a fullscreen kiosk locks the machine until you
+accumulate 20 minutes of dual n-back training (idle >90s pauses the clock).
+Interrupted sessions resume from the remaining time; free play earlier in the
+day counts toward the quota. A high-friction emergency skip (type a pledge
+sentence + 60s wait, 2 per rolling week) is available on the lock screen.
+
+Honest boundary: force-quit (Cmd+Opt+Esc) cannot be blocked from user space,
+but launchd revives the lock within seconds; Cmd+Tab switches away but the lock
+window covers every workspace. See `docs/RECOVERY.md` before enabling.
+
+Dev testing: `npm start -- --test-lock dailyMinutes=0.5,idleThresholdSeconds=10`.
+
 ## Training Tips
 
 ### For Beginners
