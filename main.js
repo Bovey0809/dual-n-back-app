@@ -83,6 +83,10 @@ if (!gotTheLock) {
 
     ipcMain.handle('agent:get-status', () => ({ installed: launchAgent.isInstalled() }));
     ipcMain.handle('agent:set-enabled', (_e, { enabled } = {}) => {
+      // Refuse while locked: disabling the agent would tear down the kiosk (lock escape).
+      if (manager && manager.isLocked()) {
+        return { installed: launchAgent.isInstalled(), error: 'locked' };
+      }
       if (enabled) launchAgent.install();
       else launchAgent.uninstall();
       manager.evaluateLock();
