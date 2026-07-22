@@ -60,3 +60,7 @@ jspm_packages/
 # Temporary files
 *.tmp
 *.temp 
+# Xcode
+xcuserdata/
+DerivedData/
+*.xcuserstate
